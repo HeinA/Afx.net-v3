@@ -1,0 +1,151 @@
+﻿<UserControl x:Class="Afx.Plugin.Tools.ApplicationStructure.Control"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:m="clr-namespace:Afx.Plugin.AfxSolution"
+             xmlns:local="clr-namespace:Afx.Plugin.Tools.ApplicationStructure"
+             xmlns:cb="clr-namespace:Afx.Plugin.Behaviors"
+             Background="{DynamicResource VsBrush.Window}"
+             Foreground="{DynamicResource VsBrush.WindowText}"
+             mc:Ignorable="d"
+             xmlns:b="clr-namespace:Afx.Plugin.Behaviors"
+             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             d:DesignHeight="300"
+             d:DesignWidth="300"
+             Name="MyToolWindow">
+  <UserControl.Resources>
+    <BitmapImage x:Key="LayerIcon"
+                 UriSource="pack://application:,,,/Afx.Plugin;component/Resources/Layer.png" />
+    <BitmapImage x:Key="ClassIcon"
+                 UriSource="pack://application:,,,/Afx.Plugin;component/Resources/Class.png" />
+    <BitmapImage x:Key="RepositoryIcon"
+                 UriSource="pack://application:,,,/Afx.Plugin;component/Resources/Repository.png" />
+    <BitmapImage x:Key="ProjectIcon"
+                 UriSource="pack://application:,,,/Afx.Plugin;component/Resources/Project.png" />
+    <BitmapImage x:Key="FolderIcon"
+                 UriSource="pack://application:,,,/Afx.Plugin;component/Resources/Folder.png" />
+  </UserControl.Resources>
+
+  <DockPanel>
+    <TreeView ItemsSource="{Binding Layers}"
+              Background="Transparent"
+              BorderThickness="0">
+      <i:Interaction.Behaviors>
+        <b:BindableSelectedItemBehavior SelectedItem="{Binding ApplicationStructure.SelectedItem, Mode=TwoWay}" />
+      </i:Interaction.Behaviors>
+
+      <TreeView.ItemContainerStyle>
+        <Style TargetType="{x:Type TreeViewItem}"
+               BasedOn="{StaticResource {x:Type TreeViewItem}}">
+          <Setter Property="cb:MouseDoubleClick.Command"
+                  Value="{Binding ItemActivatedCommand}" />
+          <Setter Property="cb:MouseDoubleClick.CommandParameter"
+                  Value="{Binding}" />
+        </Style>
+      </TreeView.ItemContainerStyle>
+
+      <TreeView.Resources>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                         Color="{x:Static SystemColors.HighlightColor}" />
+
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                         Color="{x:Static SystemColors.HighlightTextColor}" />
+
+
+
+        <HierarchicalDataTemplate DataType="{x:Type local:FolderViewModel}"
+                                  ItemsSource="{Binding Items}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{StaticResource LayerIcon}"
+                   Margin="3,1,3,1" />
+            <TextBlock Text="{Binding Text}"
+                       VerticalAlignment="Center"
+                       Margin="3,1,3,1" />
+
+          </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <HierarchicalDataTemplate DataType="{x:Type m:AfxProject}"
+                                  ItemsSource="{Binding Folders}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{StaticResource ProjectIcon}"
+                   Margin="3,1,3,1" />
+            <TextBlock Text="{Binding Name}"
+                       VerticalAlignment="Center"
+                       Margin="3,1,3,1" />
+
+          </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <HierarchicalDataTemplate DataType="{x:Type m:AfxFolder}"
+                                  ItemsSource="{Binding Items}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{StaticResource FolderIcon}"
+                   Margin="3,1,3,1" />
+            <TextBlock Text="{Binding Text}"
+                       VerticalAlignment="Center"
+                       Margin="3,1,3,1" />
+
+          </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <HierarchicalDataTemplate DataType="{x:Type m:AfxBusinessClass}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{StaticResource ClassIcon}"
+                   Margin="3,1,3,1" />
+            <TextBlock Text="{Binding Name}"
+                       VerticalAlignment="Center"
+                       Margin="3,1,3,1" />
+
+          </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <HierarchicalDataTemplate DataType="{x:Type m:AfxObjectRepository}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{StaticResource RepositoryIcon}"
+                   Margin="3,1,3,1" />
+            <TextBlock Text="{Binding Name}"
+                       VerticalAlignment="Center"
+                       Margin="3,1,3,1" />
+
+          </StackPanel>
+        </HierarchicalDataTemplate>
+
+        <!--<HierarchicalDataTemplate DataType="{x:Type m:AfxFolderObjectRepository}"
+                                          ItemsSource="{Binding AfxObjectRepositories}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{StaticResource FolderIcon}"
+                               Margin="3,1,3,1" />
+                        <TextBlock Text="{Binding Name}"
+                                   VerticalAlignment="Center"
+                                   Margin="3,1,3,1" />
+
+                    </StackPanel>
+                </HierarchicalDataTemplate>-->
+
+        <!--<HierarchicalDataTemplate DataType="{x:Type m:AfxObject}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{StaticResource ClassIcon}"
+                               Margin="3,1,3,1" />
+                        <TextBlock Text="{Binding Name}"
+                                   VerticalAlignment="Center"
+                                   Margin="3,1,3,1" />
+
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+
+                <HierarchicalDataTemplate DataType="{x:Type m:AfxObjectRepository}">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{StaticResource RepositoryIcon}"
+                               Margin="3,1,3,1" />
+                        <TextBlock Text="{Binding Name}"
+                                   VerticalAlignment="Center"
+                                   Margin="3,1,3,1" />
+
+                    </StackPanel>
+                </HierarchicalDataTemplate>-->
+      </TreeView.Resources>
+    </TreeView>
+  </DockPanel>
+</UserControl>

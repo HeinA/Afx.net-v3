@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" xmlns:sdk="http://schemas.microsoft.com/developer/vstemplate-sdkextension/2010">
+  <TemplateData>
+    <Name>Class Library</Name>
+    <Description>An Afx Class Library</Description>
+    <Icon>ClassLibrary.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <RequiredFrameworkVersion>4.6</RequiredFrameworkVersion>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>fb9ff467-955d-4b97-b6b6-7305ed5b54cc</TemplateID>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>ClassLibrary</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="ProjectTemplate.csproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" TargetFileName="Properties\AssemblyInfo.cs">AssemblyInfo.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">Constants.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="false">packages.config</ProjectItem>
+      <ProjectItem ReplaceParameters="true" TargetFileName="project.json" OpenInEditor="false">projectjson.template</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

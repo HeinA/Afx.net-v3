@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" xmlns:sdk="http://schemas.microsoft.com/developer/vstemplate-sdkextension/2010">
+  <TemplateData>
+    <Name>Sql Data Library</Name>
+    <Description>An Afx Sql Data Library</Description>
+    <Icon>SqlDataLibrary.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <RequiredFrameworkVersion>2.0</RequiredFrameworkVersion>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>1f2e9cc7-2c0b-4a1c-aa75-d770a6fa785f</TemplateID>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>SqlDataLibrary</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="ProjectTemplate.csproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" TargetFileName="Properties\AssemblyInfo.cs">AssemblyInfo.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true">packages.config</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true">Constants.cs</ProjectItem>
+    </Project>
+  </TemplateContent>
+  <WizardExtension>
+    <Assembly>Afx.Plugin.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ad8c41bc8573ba9c</Assembly>
+    <FullClassName>Afx.Plugin.ProjectFlavour.SqlDataLibrary.ProjectWizard</FullClassName>
+  </WizardExtension>
+</VSTemplate>

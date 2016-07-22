@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Project" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" xmlns:sdk="http://schemas.microsoft.com/developer/vstemplate-sdkextension/2010">
+  <TemplateData>
+    <Name>Service Library</Name>
+    <Description>An Afx Service Library</Description>
+    <Icon>ServiceLibrary.ico</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <RequiredFrameworkVersion>4.6</RequiredFrameworkVersion>
+    <SortOrder>1000</SortOrder>
+    <TemplateID>229389ea-b9b5-489f-abe9-a538b8c35683</TemplateID>
+    <CreateNewFolder>true</CreateNewFolder>
+    <DefaultName>ServiceLibrary</DefaultName>
+    <ProvideDefaultName>true</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <Project File="ProjectTemplate.csproj" ReplaceParameters="true">
+      <ProjectItem ReplaceParameters="true" TargetFileName="Properties\AssemblyInfo.cs">AssemblyInfo.cs</ProjectItem>
+      <ProjectItem ReplaceParameters="true" OpenInEditor="true">packages.config</ProjectItem>
+    </Project>
+  </TemplateContent>
+</VSTemplate>

@@ -1,0 +1,10 @@
+{
+  "supports": {},
+  "dependencies": {
+    "Afx.Net.Core": "1.0.8",
+    "Microsoft.Bcl.Build": "1.0.21"
+  },
+  "frameworks": {
+    ".NETPortable,Version=v4.5,Profile=Profile7": {}
+  }
+}
