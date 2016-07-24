@@ -10,13 +10,24 @@ namespace TestConsoleApplication
   [Persistent]
   public abstract class Document : Afx.AfxObject
   {
+    protected Document()
+    {
+    }
+
+    protected Document(Guid id)
+      : base(id)
+    {
+    }
+
+    protected Document(string id)
+      : base(id)
+    {
+    }
+
     [Persistent]
     public string DocumentNumber { get; set; }
 
     [Persistent]
     public DateTime DocumentDate { get; set; }
-
-    //[Persistent]
-    //public ZZZ ZZZ { get; set; }
   }
 }

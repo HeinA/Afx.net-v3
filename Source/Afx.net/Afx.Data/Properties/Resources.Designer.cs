@@ -70,6 +70,24 @@ namespace Afx.Data.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Could not determine the object type.
+        /// </summary>
+        public static string CouldNotDetermineType {
+            get {
+                return ResourceManager.GetString("CouldNotDetermineType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to LoadObject did not return exactly one row.
+        /// </summary>
+        public static string LoadOneRow {
+            get {
+                return ResourceManager.GetString("LoadOneRow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No connection scope defined..
         /// </summary>
         public static string NoConnectionScope {
@@ -93,6 +111,24 @@ namespace Afx.Data.Properties {
         public static string NoSuchConnectionScope {
             get {
                 return ResourceManager.GetString("NoSuchConnectionScope", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; is not an Afx Type.
+        /// </summary>
+        public static string NotAnAfxType {
+            get {
+                return ResourceManager.GetString("NotAnAfxType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No repository found for type &apos;{0}&apos;.
+        /// </summary>
+        public static string TypeRepositoryNotFound {
+            get {
+                return ResourceManager.GetString("TypeRepositoryNotFound", resourceCulture);
             }
         }
     }

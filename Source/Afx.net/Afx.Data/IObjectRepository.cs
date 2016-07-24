@@ -6,10 +6,19 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public interface IObjectRepository<T>
-    where T : IAfxObject
+  public interface IObjectRepository
   {
-    T LoadObject(Guid id);
-    T SaveObject(T target);
+    Type TargetType { get; }
+
+    LoadContext GetInstance(Guid id);
+    LoadContext GetInstances(Guid owner);
+    bool IsNew(Guid id);
+
+    IAfxObject LoadObjectCore(LoadContext context);
+    IAfxObject[] LoadObjectsCore(LoadContext context);
+
+    void SaveObjectCore(IAfxObject target, SaveContext context);
+
+    void DeleteObjectsCore(DeleteContext context);
   }
 }

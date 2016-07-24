@@ -120,6 +120,12 @@
   <data name="ConnectionStringNotDefined" xml:space="preserve">
     <value>Connection string is not defined.</value>
   </data>
+  <data name="CouldNotDetermineType" xml:space="preserve">
+    <value>Could not determine the object type</value>
+  </data>
+  <data name="LoadOneRow" xml:space="preserve">
+    <value>LoadObject did not return exactly one row</value>
+  </data>
   <data name="NoConnectionScope" xml:space="preserve">
     <value>No connection scope defined.</value>
   </data>
@@ -128,5 +134,11 @@
   </data>
   <data name="NoSuchConnectionScope" xml:space="preserve">
     <value>No such connection scope.</value>
+  </data>
+  <data name="NotAnAfxType" xml:space="preserve">
+    <value>Type '{0}' is not an Afx Type</value>
+  </data>
+  <data name="TypeRepositoryNotFound" xml:space="preserve">
+    <value>No repository found for type '{0}'</value>
   </data>
 </root>

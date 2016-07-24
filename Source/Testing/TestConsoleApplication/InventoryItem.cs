@@ -11,5 +11,25 @@ namespace TestConsoleApplication
   [Persistent]
   public class InventoryItem : AfxObject
   {
+    #region Constructors
+
+    public InventoryItem()
+    {
+    }
+
+    public InventoryItem(Guid id)
+      : base(id)
+    {
+    }
+
+    public InventoryItem(string id)
+      : base(id)
+    {
+    }
+
+    #endregion
+
+    [Persistent]
+    public string Name { get; set; }
   }
 }

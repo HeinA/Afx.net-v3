@@ -11,6 +11,24 @@ namespace TestConsoleApplication
 {
   public class PurchaseOrder : Document
   {
+    #region Constructors
+
+    public PurchaseOrder()
+    {
+    }
+
+    public PurchaseOrder(Guid id)
+      : base(id)
+    {
+    }
+
+    public PurchaseOrder(string id)
+      : base(id)
+    {
+    }
+
+    #endregion
+
     [Persistent]
     public bool IsComplete { get; set; }
 
@@ -20,6 +38,6 @@ namespace TestConsoleApplication
 
 
     AssociativeCollection<InventoryItem, PurchaseOrderItem> mItems;
-    AssociativeCollection<InventoryItem, PurchaseOrderItem> Items { get { return this.GetAssociativeCollection<InventoryItem, PurchaseOrderItem>(ref mItems); } }
+    public AssociativeCollection<InventoryItem, PurchaseOrderItem> Items { get { return this.GetAssociativeCollection<InventoryItem, PurchaseOrderItem>(ref mItems); } }
   }
 }

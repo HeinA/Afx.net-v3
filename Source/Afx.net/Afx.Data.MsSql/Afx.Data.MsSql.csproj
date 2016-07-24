@@ -61,6 +61,7 @@
     <Compile Include="IDefaultDbText.cs" />
     <Compile Include="MsSqlBuilder.cs" />
     <Compile Include="MsSqlCommandProvider.cs" />
+    <Compile Include="MsSqlObjectRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyInfoExtender.cs" />
     <Compile Include="TypeExtender.cs" />

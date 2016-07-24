@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Afx.Data;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,9 +27,9 @@ namespace Afx.Collections
     internal AssociativeCollection(AfxObject owner, string propertyName)
       : base(owner, propertyName)
     {
-      //IsCompositeReference = ((Description.Metadata.AssociativeMetadata)Description.Metadata.Metadata.GetMetadata(typeof(TAssociative))).IsCompositeReference;
+      IsCompositeReference = typeof(TAssociative).GetTypeInfo().GetCustomAttribute<OwnedReferenceAttribute>(true) != null;
       mOrderedDictionary = new OrderedDictionary<TItem, TAssociative>();
-      mDictionary = null;
+      mDictionary = mOrderedDictionary;
     }
 
     #endregion
@@ -62,8 +64,13 @@ namespace Afx.Collections
 
       ass.Reference = item;
       ass.Owner = Owner;
+      ass.PropertyChanged -= ItemPropertyChanged;
       ass.PropertyChanged += ItemPropertyChanged;
-      if (IsCompositeReference) item.PropertyChanged += ItemPropertyChanged;
+      if (IsCompositeReference)
+      {
+        item.PropertyChanged -= ItemPropertyChanged;
+        item.PropertyChanged += ItemPropertyChanged;
+      }
     }
 
     #endregion

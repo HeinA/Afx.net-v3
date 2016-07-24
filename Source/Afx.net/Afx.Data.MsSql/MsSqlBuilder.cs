@@ -18,6 +18,7 @@ namespace Afx.Data.MsSql
     const string Reference = "Reference";
     const string Id = "id";
     const string Ix = "ix";
+    const string RegisteredType = "RegisteredType";
 
     public void ValidateRepository()
     {
@@ -188,8 +189,10 @@ namespace Afx.Data.MsSql
         if (count == 0)
         {
           log.InfoFormat("[{0}].[{1}]", GetSchema(t), t.Name);
+          bool addType = false;
+          if (t.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() != null) addType = true;
 
-          string sql = string.Format("CREATE TABLE [{0}].[{1}] ([id] UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL CONSTRAINT [Default_{0}_{1}_id] DEFAULT NEWID(), [ix] INT NOT NULL IDENTITY(1,1)) ON [PRIMARY]", GetSchema(t), t.Name);
+          string sql = string.Format("CREATE TABLE [{0}].[{1}] ([id] UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL CONSTRAINT [Default_{0}_{1}_id] DEFAULT NEWID(), [ix] INT NOT NULL IDENTITY(1,1){2}{3}) ON [PRIMARY]", GetSchema(t), t.Name, addType ? ", [RegisteredType] INT NOT NULL" : string.Empty, piOwner != null ? string.Format(", [Owner] uniqueidentifier {0}NULL", piOwner.PropertyType != t ? "NOT " : string.Empty) : string.Empty);
           using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
           {
             cmd.ExecuteNonQuery();
@@ -201,7 +204,14 @@ namespace Afx.Data.MsSql
             cmd.ExecuteNonQuery();
           }
 
-          sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}](ix)", GetSchema(t), t.Name);
+          if (piOwner != null)
+          {
+            sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}]([Owner], ix)", GetSchema(t), t.Name);
+          }
+          else
+          {
+            sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}](ix)", GetSchema(t), t.Name);
+          }
           using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
           {
             cmd.ExecuteNonQuery();
@@ -211,6 +221,15 @@ namespace Afx.Data.MsSql
           using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
           {
             cmd.ExecuteNonQuery();
+          }
+
+          if (addType && GetRelationship(t, RegisteredType) == null)
+          {
+            string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT FK_{1}_RegisteredType FOREIGN KEY ([RegisteredType]) REFERENCES [Afx].[RegisteredType]	([id])", GetSchema(t), t.Name);
+            using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateConstraint))
+            {
+              cmd.ExecuteNonQuery();
+            }
           }
 
           if (types.Contains(t.BaseType))
@@ -247,9 +266,15 @@ namespace Afx.Data.MsSql
         {
           foreach (var pi in baseType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
           {
-            if (!DoesColumnExist(ds, pi.AfxDbName(t))) CreateTableProperty(pi, t, false);
-            if (pi.Name == Owner) piOwner = pi;
+            bool isNullable = false;
+            if (pi.Name == Owner)
+            {
+              Type afxBaseType = pi.PropertyType.GetGenericSubClass(typeof(AfxObject<>));
+              if (afxBaseType != null && afxBaseType.GetGenericArguments()[0].Equals(t)) isNullable = true;
+              piOwner = pi;
+            }
             if (pi.Name == Reference) piReference = pi;
+            if (!DoesColumnExist(ds, pi.AfxDbName(t))) CreateTableProperty(pi, t, isNullable);
             processedProperties.Add(pi);
           }
         }
@@ -271,7 +296,7 @@ namespace Afx.Data.MsSql
         foreach (DataRow dr in ds.Tables[0].Rows)
         {
           string columnName = (string)dr["COLUMN_NAME"];
-          if (columnName != Id && columnName != Ix && !processedProperties.Any(pi1 => pi1.Name.Equals(columnName)))
+          if (columnName != Id && columnName != Ix && columnName != RegisteredType && !processedProperties.Any(pi1 => pi1.Name.Equals(columnName)))
           {
             DropColumn(t, dr);
           }
@@ -289,8 +314,8 @@ namespace Afx.Data.MsSql
     {
       try
       {
-        DataSet ds1 = GetRelationships(type, (string)drColumn["COLUMN_NAME"]);
-        foreach (DataRow dr1 in ds1.Tables[0].Rows)
+        DataRow dr1 = GetRelationship(type, (string)drColumn["COLUMN_NAME"]);
+        if (dr1 != null)
         {
           log.WarnFormat("Dropping Constraint [{0}]", dr1["ConstraintName"]);
 
@@ -425,7 +450,7 @@ namespace Afx.Data.MsSql
 
     void ValidateRelationship(Type ownerType, string propertyName, Type referencedType, bool cascadeDelete)
     {
-      DataRow dr = GetRelationship(ownerType, propertyName, referencedType);
+      DataRow dr = GetRelationship(ownerType, propertyName);
       if (dr == null)
       {
         CreateRelationship(ownerType, propertyName, referencedType, cascadeDelete);
@@ -434,7 +459,39 @@ namespace Afx.Data.MsSql
 
     #region GetRelationship()
 
-    DataRow GetRelationship(Type ownerType, string propertyName, Type referencedType)
+    //DataRow GetRelationship(Type ownerType, string propertyName, Type referencedType)
+    //{
+    //  string sql = @" select	RC.CONSTRAINT_NAME as ConstraintName
+    //                    ,		CCU1.TABLE_SCHEMA as OwnerSchema
+    //                    ,		CCU1.TABLE_NAME as OwnerTable
+    //                    ,		CCU1.COLUMN_NAME as OwnerColumn
+    //                    ,		CCU2.TABLE_SCHEMA as ReferencedSchema
+    //                    ,		CCU2.TABLE_NAME as ReferencedTable
+    //                    ,		CCU2.COLUMN_NAME as ReferencedColumn
+    //                    ,		RC.UPDATE_RULE as [Update]
+    //                    ,		RC.DELETE_RULE as [Delete]
+    //                    from INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
+    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_TABLE_USAGE CTU on CTU.CONSTRAINT_NAME=RC.CONSTRAINT_NAME
+    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU1 on RC.CONSTRAINT_NAME=CCU1.CONSTRAINT_NAME
+    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU2 on RC.UNIQUE_CONSTRAINT_NAME=CCU2.CONSTRAINT_NAME
+    //                    where CCU1.TABLE_SCHEMA=@osn and CCU1.TABLE_NAME=@otn and CCU1.COLUMN_NAME=@ocn
+    //                    and   CCU2.TABLE_SCHEMA=@rsn and CCU2.TABLE_NAME=@rtn and CCU2.COLUMN_NAME=@rcn";
+
+    //  using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sql))
+    //  {
+    //    cmd.Parameters.AddWithValue("@osn", GetSchema(ownerType));
+    //    cmd.Parameters.AddWithValue("@otn", ownerType.Name);
+    //    cmd.Parameters.AddWithValue("@ocn", propertyName); // Id);
+    //    cmd.Parameters.AddWithValue("@rsn", GetSchema(referencedType));
+    //    cmd.Parameters.AddWithValue("@rtn", referencedType.Name);
+    //    cmd.Parameters.AddWithValue("@rcn", Id);
+    //    DataSet ds = ExecuteDataSet(cmd);
+    //    if (ds.Tables[0].Rows.Count == 0) return null;
+    //    return ds.Tables[0].Rows[0];
+    //  }
+    //}
+
+    DataRow GetRelationship(Type ownerType, string propertyName)
     {
       string sql = @" select	RC.CONSTRAINT_NAME as ConstraintName
                         ,		CCU1.TABLE_SCHEMA as OwnerSchema
@@ -449,48 +506,16 @@ namespace Afx.Data.MsSql
                         inner join INFORMATION_SCHEMA.CONSTRAINT_TABLE_USAGE CTU on CTU.CONSTRAINT_NAME=RC.CONSTRAINT_NAME
                         inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU1 on RC.CONSTRAINT_NAME=CCU1.CONSTRAINT_NAME
                         inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU2 on RC.UNIQUE_CONSTRAINT_NAME=CCU2.CONSTRAINT_NAME
-                        where CCU1.TABLE_SCHEMA=@osn and CCU1.TABLE_NAME=@otn and CCU1.COLUMN_NAME=@ocn
-                        and   CCU2.TABLE_SCHEMA=@rsn and CCU2.TABLE_NAME=@rtn and CCU2.COLUMN_NAME=@rcn";
-
-      using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sql))
-      {
-        cmd.Parameters.AddWithValue("@osn", GetSchema(ownerType));
-        cmd.Parameters.AddWithValue("@otn", ownerType.Name);
-        cmd.Parameters.AddWithValue("@ocn", propertyName); // Id);
-        cmd.Parameters.AddWithValue("@rsn", GetSchema(referencedType));
-        cmd.Parameters.AddWithValue("@rtn", referencedType.Name);
-        cmd.Parameters.AddWithValue("@rcn", Id);
-        DataSet ds = ExecuteDataSet(cmd);
-        if (ds.Tables[0].Rows.Count == 0) return null;
-        return ds.Tables[0].Rows[0];
-      }
-    }
-
-    DataSet GetRelationships(Type ownerType, string propertyName)
-    {
-      string sql = @" select	RC.CONSTRAINT_NAME as ConstraintName
-                        ,		CCU1.TABLE_SCHEMA as OwnerSchema
-                        ,		CCU1.TABLE_NAME as OwnerTable
-                        ,		CCU1.COLUMN_NAME as OwnerColumn
-                        ,		CCU2.TABLE_SCHEMA as ReferencedSchema
-                        ,		CCU2.TABLE_NAME as ReferencedTable
-                        ,		CCU2.COLUMN_NAME as ReferencedColumn
-                        ,		RC.UPDATE_RULE as [Update]
-                        ,		RC.DELETE_RULE as [Delete]
-                        from INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
-                        inner join INFORMATION_SCHEMA.CONSTRAINT_TABLE_USAGE CTU on CTU.CONSTRAINT_NAME=RC.CONSTRAINT_NAME
-                        inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU1 on RC.CONSTRAINT_NAME=CCU1.CONSTRAINT_NAME
-                        inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU2 on RC.UNIQUE_CONSTRAINT_NAME=CCU2.CONSTRAINT_NAME
-                        where CCU1.TABLE_SCHEMA=@osn and CCU1.TABLE_NAME=@otn and CCU1.COLUMN_NAME=@ocn
-                        and CCU2.COLUMN_NAME=@rcn";
+                        where CCU1.TABLE_SCHEMA=@osn and CCU1.TABLE_NAME=@otn and CCU1.COLUMN_NAME=@ocn";
 
       using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sql))
       {
         cmd.Parameters.AddWithValue("@osn", GetSchema(ownerType));
         cmd.Parameters.AddWithValue("@otn", ownerType.Name);
         cmd.Parameters.AddWithValue("@ocn", propertyName);
-        cmd.Parameters.AddWithValue("@rcn", Id);
-        return ExecuteDataSet(cmd);
+        DataSet ds = ExecuteDataSet(cmd);
+        if (ds.Tables[0].Rows.Count == 0) return null;
+        return ds.Tables[0].Rows[0];
       }
     }
 
@@ -508,6 +533,12 @@ namespace Afx.Data.MsSql
         {
           cmd.ExecuteNonQuery();
         }
+
+        //string sqlCreateIndex = string.Format("CREATE NONCLUSTERED INDEX IX_{0}_{2} ON [{1}].[{0}]([{2}])", ownerType.Name, GetSchema(ownerType), propertyName);
+        //using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateIndex))
+        //{
+        //  cmd.ExecuteNonQuery();
+        //}
       }
       catch
       {
@@ -548,7 +579,7 @@ namespace Afx.Data.MsSql
     {
       StringWriter sw = GetTableAfterDeleteTrigger(type);
       sw.WriteLine();
-      sw.WriteLine("\tDELETE FROM {0} WHERE {0}.[id] IN (SELECT [Reference] FROM DELETED)", targetType.AfxDbName());
+      sw.WriteLine("\tDELETE FROM {0} WHERE {0}.[id] IN (SELECT [Reference] FROM DELETED D WHERE NOT EXISTS (SELECT 1 FROM {1} O WHERE O.[Reference]=D.[Reference] AND O.[id]<>D.[id]))", targetType.AfxDbName(), type.AfxDbName());
       sw.WriteLine("\tDELETE FROM {0} WHERE {0}.[id] IN (SELECT [id] FROM DELETED)", type.AfxDbName());
     }
 
@@ -576,6 +607,7 @@ namespace Afx.Data.MsSql
             swOuter.WriteLine("CREATE TRIGGER [{0}].[InsteadOfDelete_{1}] ON {2} INSTEAD OF DELETE", GetSchema(type), type.Name, type.AfxDbName());
             swOuter.WriteLine("AS");
             swOuter.WriteLine("BEGIN");
+            swOuter.WriteLine("\tSET NOCOUNT ON");
             swOuter.WriteLine(sw);
             swOuter.WriteLine("END");
 
@@ -601,6 +633,7 @@ namespace Afx.Data.MsSql
             swOuter.WriteLine("CREATE TRIGGER [{0}].[AfterDelete_{1}] ON {2} AFTER DELETE", GetSchema(type), type.Name, type.AfxDbName());
             swOuter.WriteLine("AS");
             swOuter.WriteLine("BEGIN");
+            swOuter.WriteLine("\tSET NOCOUNT ON");
             swOuter.WriteLine(sw);
             swOuter.WriteLine("END");
 

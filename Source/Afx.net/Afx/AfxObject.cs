@@ -296,7 +296,7 @@ namespace Afx
 
     protected override IAfxObject ValidateOwner(IAfxObject owner)
     {
-      if (!typeof(TOwner).GetTypeInfo().IsAssignableFrom(owner.GetType().GetTypeInfo())) throw new InvalidCastException(Properties.Resources.InvalidOwnerType);
+      if (owner != null && !typeof(TOwner).GetTypeInfo().IsAssignableFrom(owner.GetType().GetTypeInfo())) throw new InvalidCastException(Properties.Resources.InvalidOwnerType);
       return owner;
     }
 

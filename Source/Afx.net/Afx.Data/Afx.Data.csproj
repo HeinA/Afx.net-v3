@@ -53,9 +53,12 @@
     <Compile Include="DataBuilder.cs" />
     <Compile Include="DataException.cs" />
     <Compile Include="DataScope.cs" />
+    <Compile Include="DeleteContext.cs" />
     <Compile Include="ICommandProvider.cs" />
     <Compile Include="IDataBuilder.cs" />
     <Compile Include="IObjectRepository.cs" />
+    <Compile Include="LoadContext.cs" />
+    <Compile Include="ObjectTarget.cs" />
     <Compile Include="ObjectRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -63,6 +66,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="SaveContext.cs" />
+    <Compile Include="T.cs" />
     <Compile Include="TypeExtender.cs" />
   </ItemGroup>
   <ItemGroup>

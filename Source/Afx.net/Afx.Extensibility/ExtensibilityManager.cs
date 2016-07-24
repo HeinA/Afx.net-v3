@@ -54,6 +54,11 @@ namespace Afx
       return CompositionContainer.GetExportedValueOrDefault<T>();
     }
 
+    public static IEnumerable<T> GetObjects<T>()
+    {
+      return CompositionContainer.GetExportedValues<T>();
+    }
+
     public static T GetObject<T>(string contractName)
     {
       return CompositionContainer.GetExportedValueOrDefault<T>(contractName);

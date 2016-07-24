@@ -18,6 +18,16 @@ namespace Afx
     {
     }
 
+    protected AssociativeObject(Guid id)
+      : base(id)
+    {
+    }
+
+    protected AssociativeObject(string id)
+      : base(id)
+    {
+    }
+
     #endregion
 
     #region IAfxObject Reference
@@ -57,6 +67,16 @@ namespace Afx
     {
     }
 
+    protected AssociativeObject(Guid id)
+      : base(id)
+    {
+    }
+
+    protected AssociativeObject(string id)
+      : base(id)
+    {
+    }
+
     #endregion
 
     #region TOwner Owner
@@ -70,7 +90,7 @@ namespace Afx
 
     protected override IAfxObject ValidateOwner(IAfxObject owner)
     {
-      if (!(owner is TOwner)) throw new InvalidCastException(Properties.Resources.InvalidOwnerType);
+      if (owner != null && !(owner is TOwner)) throw new InvalidCastException(Properties.Resources.InvalidOwnerType);
       return owner;
     }
 

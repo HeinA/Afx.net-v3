@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Afx
+namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-  public sealed class AfxBaseTypeAttribute : Attribute
+  public class SaveContext
   {
+    public bool IsNew { get; set; }
+    public bool Merge { get; set; }
   }
 }
