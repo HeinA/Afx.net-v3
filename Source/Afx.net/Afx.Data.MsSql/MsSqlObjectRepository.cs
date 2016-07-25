@@ -15,6 +15,8 @@ namespace Afx.Data.MsSql
     protected static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
     public abstract void FillObject(T target, LoadContext context, DataRow dr);
+    public abstract string Columns { get; }
+    public abstract string TableJoin { get; }
 
     #region IsNew()
 
@@ -37,7 +39,7 @@ namespace Afx.Data.MsSql
 
     protected override T LoadObjectCore(LoadContext context)
     {
-      string sql = string.Format("SELECT [OT].*, [RT].[Fullname] AS [AssemblyFullName] FROM {0} [OT] INNER JOIN [Afx].[RegisteredType] [RT] ON [OT].[RegisteredType]=[RT].[id] WHERE [OT].[id]=@id", typeof(T).AfxDbName());
+      string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", Columns, TableJoin, typeof(T).AfxDbName());
       //log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
@@ -57,7 +59,7 @@ namespace Afx.Data.MsSql
 
     protected override void LoadObjectCore(T target, LoadContext context)
     {
-      string sql = string.Format("SELECT * FROM {0} WHERE [id]=@id", typeof(T).AfxDbName());
+      string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", Columns, TableJoin, typeof(T).AfxDbName());
       //log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
@@ -79,22 +81,22 @@ namespace Afx.Data.MsSql
       List<T> objects = new List<T>();
 
       string sql = null;
-      if (OwnerType == null) sql = string.Format("SELECT [OT].*, [RT].[FullName] AS [AssemblyFullname] FROM [Afx].[RegisteredType] [RT] INNER JOIN {0} [OT] ON [OT].[RegisteredType]=[RT].[id]", typeof(T).AfxDbName());
+      if (OwnerType == null) sql = string.Format("SELECT {0} FROM {1}", Columns, TableJoin);
       else
       {
         if (OwnerType != typeof(T))
         {
-          if (context.Owner == Guid.Empty) sql = string.Format("SELECT [OT].*, [RT].[FullName] AS [AssemblyFullname] FROM [Afx].[RegisteredType] [RT] INNER JOIN {0} [OT] ON [OT].[RegisteredType]=[RT].[id] WHERE [OT].[Owner] IS NULL", typeof(T).AfxDbName());
-          else sql = string.Format("SELECT [OT].*, [RT].[FullName] AS [AssemblyFullname] FROM [Afx].[RegisteredType] [RT] INNER JOIN {0} [OT] ON [OT].[RegisteredType]=[RT].[id] WHERE [OT].[Owner]=@id", typeof(T).AfxDbName());
+          if (context.Owner == Guid.Empty) sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner] IS NULL", Columns, TableJoin, typeof(T).AfxDbName());
+          else sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner]=@id", Columns, TableJoin, typeof(T).AfxDbName());
         }
         else
         {
-          if (context.Owner == Guid.Empty) sql = sql = string.Format("WITH Hierarchy AS (SELECT *, 0 AS Level FROM {0} OT WHERE [OT].[Owner] IS NULL UNION ALL SELECT OT.*, Level + 1 FROM {0} OT INNER JOIN Hierarchy H ON H.id = OT.Owner) SELECT H.*, RT.FullName as AssemblyFullname FROM Hierarchy H INNER JOIN Afx.RegisteredType RT ON H.RegisteredType=RT.Id ORDER BY [Level]", typeof(T).AfxDbName());
-          else sql = string.Format("WITH Hierarchy AS (SELECT *, 0 AS Level FROM {0} OT WHERE [OT].[id]=@id UNION ALL SELECT OT.*, Level + 1 FROM {0} OT INNER JOIN Hierarchy H ON H.id = OT.Owner) SELECT H.*, RT.FullName as AssemblyFullname FROM Hierarchy H INNER JOIN Afx.RegisteredType RT ON H.RegisteredType=RT.Id ORDER BY [Level]", typeof(T).AfxDbName());
+          if (context.Owner == Guid.Empty) sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner] IS NULL UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
+          else sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner]=@id UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
         }
       }
+      log.Debug(sql);
 
-      //log.Debug(sql);
       using (SqlCommand cmd = GetCommand(sql))
       {
         cmd.Parameters.AddWithValue("@id", context.Owner);
@@ -117,6 +119,8 @@ namespace Afx.Data.MsSql
 
     #endregion
 
+    #region DeleteObjectCore()
+
     protected override void DeleteObjectCore(T target)
     {
       string sql = string.Format("DELETE FROM {0} WHERE [id]=@id", typeof(T).AfxDbName());
@@ -127,6 +131,17 @@ namespace Afx.Data.MsSql
       }
     }
 
+    #endregion
+
+    #region SqlRepositoryFor
+
+    protected MsSqlObjectRepository<T1> SqlRepositoryFor<T1>()
+      where T1 : class, IAfxObject
+    {
+      return (MsSqlObjectRepository<T1>)RepositoryFor<T1>();
+    }
+
+    #endregion
 
     #region GetCommand()
 

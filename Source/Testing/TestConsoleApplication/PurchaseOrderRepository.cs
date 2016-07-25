@@ -13,11 +13,23 @@ using System.Threading.Tasks;
 
 namespace TestConsoleApplication
 {
-  [Export(typeof(IObjectRepository))]
+  [Export(typeof(ObjectRepository<PurchaseOrder>))]
   public class PurchaseOrderRepository : MsSqlObjectRepository<PurchaseOrder>
   {
+    public override string Columns
+    {
+      get { return "[Test].[PurchaseOrder].[IsComplete], [Test].[PurchaseOrder].[CustomerName]"; }
+    }
+
+    public override string TableJoin
+    {
+      get { return "[Test].[PurchaseOrder]"; }
+    }
+
     public override void FillObject(PurchaseOrder target, LoadContext context, DataRow dr)
     {
+      //SqlRepositoryFor<Document>().FillObject(target, context, dr);
+            
       if (dr["IsComplete"] != DBNull.Value) target.IsComplete = (bool)dr["IsComplete"];
       if (dr["CustomerName"] != DBNull.Value) target.CustomerName = (string)dr["CustomerName"];
 
@@ -32,7 +44,7 @@ namespace TestConsoleApplication
       bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = ImplementationRootRepository.IsNew(target.Id);
+        isNew = IsNew(target.Id);
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[PurchaseOrder] ([id], [IsComplete], [CustomerName]) VALUES (@id, @ic, @cn)";

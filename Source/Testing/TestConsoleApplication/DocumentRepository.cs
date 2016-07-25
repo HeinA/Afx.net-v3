@@ -13,9 +13,19 @@ using Afx.Collections;
 
 namespace TestConsoleApplication
 {
-  [Export(typeof(IObjectRepository))]
+  [Export(typeof(ObjectRepository<Document>))]
   public class DocumentRepository : MsSqlObjectRepository<Document>
   {
+    public override string Columns
+    {
+      get { return "[Test].[Document].[id], [RegisteredType].[FullName] as AssemblyFullName, [Test].[Document].[DocumentNumber], [Test].[Document].[DocumentDate]"; }
+    }
+
+    public override string TableJoin
+    {
+      get { return "[Test].[Document] INNER JOIN [Afx].[RegisteredType] ON [Test].[Document].[RegisteredType]=[RegisteredType].[id]"; }
+    }
+
     public override void FillObject(Document target, LoadContext context, DataRow dr)
     {
       if (dr["DocumentNumber"] != DBNull.Value) target.DocumentNumber = (string)dr["DocumentNumber"];
@@ -27,7 +37,7 @@ namespace TestConsoleApplication
       bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = ImplementationRootRepository.IsNew(target.Id);
+        isNew = IsNew(target.Id);
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[Document] ([id], [RegisteredType], [DocumentNumber], [DocumentDate]) SELECT @id, [RT].[id], @dn, @dd FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";

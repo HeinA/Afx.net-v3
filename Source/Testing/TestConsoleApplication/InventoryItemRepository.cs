@@ -12,9 +12,19 @@ using System.Threading.Tasks;
 
 namespace TestConsoleApplication
 {
-  [Export(typeof(IObjectRepository))]
+  [Export(typeof(ObjectRepository<InventoryItem>))]
   public class InventoryItemRepository : MsSqlObjectRepository<InventoryItem>
   {
+    public override string Columns
+    {
+      get { return "[Test].[InventoryItem].[id], [Afx].[RegisteredType].[FullName] as AssemblyFullName, [Test].[InventoryItem].[Name]"; }
+    }
+
+    public override string TableJoin
+    {
+      get { return "[Test].[InventoryItem] INNER JOIN [Afx].[RegisteredType] ON [Test].[InventoryItem].[RegisteredType]=[Afx].[RegisteredType].[id]"; }
+    }
+
     public override void FillObject(InventoryItem target, LoadContext context, DataRow dr)
     {
       if (dr["Name"] != DBNull.Value) target.Name = (string)dr["Name"];
@@ -25,7 +35,7 @@ namespace TestConsoleApplication
       bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = ImplementationRootRepository.IsNew(target.Id);
+        isNew = IsNew(target.Id);
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[InventoryItem] ([id], [RegisteredType], [Name]) SELECT @id, [RT].[id], @n FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";

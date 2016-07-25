@@ -49,6 +49,13 @@ namespace Afx
 
     static CompositionContainer CompositionContainer { get; set; }
 
+    public static object GetObject(Type type)
+    {
+      MethodInfo method = CompositionContainer.GetType().GetMethod("GetExportedValueOrDefault", BindingFlags.Instance | BindingFlags.Public, null, new Type[0], null);
+      MethodInfo generic = method.MakeGenericMethod(type);
+      return generic.Invoke(CompositionContainer, null);
+    }
+
     public static T GetObject<T>()
     {
       return CompositionContainer.GetExportedValueOrDefault<T>();

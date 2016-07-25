@@ -15,7 +15,6 @@ namespace Afx.Data
       Id = Guid.Empty;
     }
 
-
     public Guid Owner { get; set; }
     public Guid Id { get; set; }
 
@@ -29,16 +28,5 @@ namespace Afx.Data
     {
       return mObjectDictionary[id];
     }
-
-    //Collection<ObjectTarget> mLoadTargets = new Collection<ObjectTarget>();
-    //public Collection<ObjectTarget> LoadTargets
-    //{
-    //  get { return mLoadTargets; }
-    //}
-
-    //public void LoadObjectTargets(IEnumerable<ObjectTarget> targets)
-    //{
-    //  mLoadTargets = new Collection<ObjectTarget>(targets.ToList());
-    //}
   }
 }

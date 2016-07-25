@@ -4,13 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Afx.Data
 {
   [AfxBaseType]
-  public abstract class ObjectRepository<T> : ObjectRepository<T>.IObjectRepository
+  public abstract class ObjectRepository<T> : IObjectRepository
     where T : class, IAfxObject
   {
     #region LoadObject()
@@ -51,6 +52,12 @@ namespace Afx.Data
 
     #region SaveObject
 
+    /// <summary>
+    /// Saves the object structure as well as deleting any objects 
+    /// in any dependent collection's DeletedItems.
+    /// The objects will only be written to the database if their IsDirty flag is set.
+    /// </summary>
+    /// <param name="target">The object to save</param>
     public void SaveObject(T target)
     {
       SaveObject(target, new SaveContext());
@@ -65,19 +72,35 @@ namespace Afx.Data
 
     #region SaveObjects
 
+    /// <summary>
+    /// Saves the objects sturcture in the collection as well as deleting any objects in 
+    /// the collection or any dependent collection's DeletedItems.
+    /// The objects will only be written to the database if their IsDirty flag is set.
+    /// </summary>
+    /// <param name="targets">The collection to save</param>
     public void SaveObjects(ObjectCollection<T> targets)
     {
       SaveObjects(targets, new SaveContext());
     }
 
+    /// <summary>
+    /// Saves the objects in the collection according to the parameters specified in the SaveContext.
+    /// Merging will not delete any objects, event if present in the collection's DeletedItems
+    /// Setting the flag OnlyProcessDirty to false will result in all objects being updated.  
+    /// This will impact performane for large or complex collections.
+    /// </summary>
+    /// <param name="targets">The collection to save</param>
+    /// <param name="context">The context options for the operations</param>
     public void SaveObjects(ObjectCollection<T> targets, SaveContext context)
     {
       foreach (var item in targets)
       {
+        //Call the Save Method on the appropriate Repository
         RepositoryInterfaceFor(item.GetType()).SaveObjectCore(item, context);
       }
       if (!context.Merge)
       {
+        //Delete any objects in the Collections's DeletedItems if the context is not a Merge
         foreach (T obj in targets.DeletedItems)
         {
           DeleteObject(obj);
@@ -89,8 +112,14 @@ namespace Afx.Data
 
     #region DeleteObject
 
+    /// <summary>
+    /// Deletes the object.
+    /// </summary>
+    /// <param name="target">The object to delete</param>
     public void DeleteObject(T target)
     {
+      //Call the Delete Method onth root implementation.
+      //Relationships & Triggers should take care of the entire hierarchy 
       ImplementationRootRepository.DeleteObjectCore(target);
     }
 
@@ -101,16 +130,13 @@ namespace Afx.Data
     #region Type ImplementationRoot
 
     Type mImplementationRoot;
-    bool mImplementationRootProcessed = false;
     protected Type ImplementationRoot
     {
       get
       {
         if (mImplementationRoot != null) return mImplementationRoot;
-        if (mImplementationRootProcessed) Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
         mImplementationRoot = typeof(T).GetAfxImplementationRoot();
         Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-        mImplementationRootProcessed = true;
         return mImplementationRoot;
       }
     }
@@ -125,7 +151,7 @@ namespace Afx.Data
       get
       {
         if (mImplementationRootRepository != null) return mImplementationRootRepository;
-        mImplementationRootRepository = GetRepository(ImplementationRoot);
+        mImplementationRootRepository = RepositoryInterfaceFor(ImplementationRoot);
         return mImplementationRootRepository;
       }
     }
@@ -135,26 +161,6 @@ namespace Afx.Data
     #endregion
 
     #region IObjectRepository
-
-    #region Protected Definition
-
-    protected interface IObjectRepository
-    {
-      Type TargetType { get; }
-
-      bool IsNew(Guid id);
-
-      IAfxObject LoadObjectCore(LoadContext context);
-      void LoadObjectCore(IAfxObject target, LoadContext context);
-
-      IAfxObject[] LoadObjectsCore(LoadContext context);
-
-      void SaveObjectCore(IAfxObject target, SaveContext context);
-
-      void DeleteObjectCore(IAfxObject target);
-    }
-
-    #endregion
 
     protected abstract bool IsNew(Guid id);
     bool IObjectRepository.IsNew(Guid id)
@@ -192,44 +198,50 @@ namespace Afx.Data
       DeleteObjectCore((T)target);
     }
 
-    Type IObjectRepository.TargetType { get { return typeof(T); } }
-
     #endregion
 
     #region Statics
 
+    static Dictionary<Type, IObjectRepository> mRepositories = new Dictionary<Type, IObjectRepository>();
+
     public static ObjectRepository<T> Instance()
     {
-      return (ObjectRepository<T>)GetRepository(typeof(T));
+      return RepositoryFor<T>();
     }
 
     protected static ObjectRepository<T1> RepositoryFor<T1>()
       where T1 : class, IAfxObject
     {
-      return (ObjectRepository<T1>)GetRepository(typeof(T));
+      if (!mRepositories.ContainsKey(typeof(T1)))
+      {
+        var or = Afx.ExtensibilityManager.GetObject<ObjectRepository<T1>>();
+        Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, typeof(T1));
+        mRepositories.Add(typeof(T1), or);
+      }
+      return (ObjectRepository<T1>)mRepositories[typeof(T1)];
     }
 
     protected static IObjectRepository RepositoryInterfaceFor(Type type)
     {
-      return GetRepository(type);
+      if (!mRepositories.ContainsKey(type))
+      {
+        Type generic = typeof(ObjectRepository<>).MakeGenericType(type);
+        IObjectRepository or = (IObjectRepository)Afx.ExtensibilityManager.GetObject(generic);
+        Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, type);
+        mRepositories.Add(type, or);
+      }
+      return mRepositories[type];
     }
 
     protected static IObjectRepository RepositoryInterfaceFor<T1>()
       where T1 : class, IAfxObject
     {
-      return GetRepository(typeof(T1));
+      return RepositoryFor<T1>();
     }
 
     protected static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       return DataBuilder.ExecuteDataSet(cmd);
-    }
-
-    static IObjectRepository GetRepository(Type objectType)
-    {
-      var or = Afx.ExtensibilityManager.GetObjects<IObjectRepository>().FirstOrDefault(or1 => or1.TargetType.Equals(objectType));
-      Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, objectType);
-      return or;
     }
 
     #endregion

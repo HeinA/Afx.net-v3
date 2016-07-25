@@ -30,7 +30,7 @@ namespace TestConsoleApplication
         using (new ConnectionScope())
         {
 
-          //Document d = ObjectRepository.GetRepository<Document>().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
+          Document d = ObjectRepository<Document>.Instance().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
 
           ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
           //for (int i = 0; i < 100; i++)
@@ -76,12 +76,6 @@ namespace TestConsoleApplication
           //
 
           ts.Complete();
-        }
-
-        using (new ConnectionScope())
-        {
-          IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand("SELECT 1");
-          object o = cmd.ExecuteScalar();
         }
       }
 

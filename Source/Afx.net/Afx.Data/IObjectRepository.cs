@@ -1,26 +1,23 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-//namespace Afx.Data
-//{
-//  public interface IObjectRepository
-//  {
-//    Type TargetType { get; }
+namespace Afx.Data
+{
+  public interface IObjectRepository
+  {
+    bool IsNew(Guid id);
 
-//    bool IsNew(Guid id);
+    IAfxObject LoadObjectCore(LoadContext context);
+    void LoadObjectCore(IAfxObject target, LoadContext context);
 
-//    IAfxObject LoadObjectCore(LoadContext context);
-//    void LoadObjectCore(IAfxObject target, LoadContext context);
+    IAfxObject[] LoadObjectsCore(LoadContext context);
 
-//    //void FillObject(IAfxObject target, LoadContext context);
+    void SaveObjectCore(IAfxObject target, SaveContext context);
 
-//    IAfxObject[] LoadObjectsCore(LoadContext context);
+    void DeleteObjectCore(IAfxObject target);
+  }
 
-//    void SaveObjectCore(IAfxObject target, SaveContext context);
-
-//    void DeleteObjectsCore(DeleteContext context);
-//  }
-//}
+}

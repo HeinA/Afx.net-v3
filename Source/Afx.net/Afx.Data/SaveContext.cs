@@ -28,7 +28,6 @@ namespace Afx.Data
 
     public bool Merge { get; private set; }
     public bool OnlyProcessDirty { get; private set; }
-    //public bool IsNew { get; internal set; }
 
     public bool ShouldProcess(IAfxObject target)
     {
