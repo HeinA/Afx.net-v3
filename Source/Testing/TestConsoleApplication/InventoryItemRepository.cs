@@ -39,7 +39,7 @@ namespace TestConsoleApplication
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[InventoryItem] ([id], [RegisteredType], [Name]) SELECT @id, [RT].[id], @n FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {
@@ -52,7 +52,7 @@ namespace TestConsoleApplication
         else
         {
           string sql = "UPDATE [Test].[InventoryItem] SET [Name]=@n WHERE [id]=@id";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {

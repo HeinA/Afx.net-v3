@@ -55,6 +55,7 @@ namespace TestConsoleApplication
           {
             accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
           }
+
           //accounts[67].Accounts[57].Name = "aaaa";
           //accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
           //accounts.RemoveAt(5);

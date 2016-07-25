@@ -48,7 +48,7 @@ namespace TestConsoleApplication
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[PurchaseOrder] ([id], [IsComplete], [CustomerName]) VALUES (@id, @ic, @cn)";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {
@@ -61,7 +61,7 @@ namespace TestConsoleApplication
         else
         {
           string sql = "UPDATE [Test].[PurchaseOrder] SET [IsComplete]=@ic, [CustomerName]=@cn WHERE [id]=@id";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {

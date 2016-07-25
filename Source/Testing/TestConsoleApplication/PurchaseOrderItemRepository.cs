@@ -41,7 +41,7 @@ namespace TestConsoleApplication
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[PurchaseOrderItem] ([id], [RegisteredType], [Owner], [Reference]) SELECT @id, [RT].[id], @o, @r FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {

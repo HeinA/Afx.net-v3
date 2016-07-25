@@ -18,7 +18,7 @@ namespace Afx.Data
 
     public T LoadObject(Guid id)
     {
-      LoadContext context = new LoadContext() { Id = id }; 
+      LoadContext context = new LoadContext() { Target = id }; 
       return (T)ImplementationRootRepository.LoadObjectCore(context);
     }
 
@@ -33,7 +33,7 @@ namespace Afx.Data
 
     public ObjectCollection<T> LoadObjects(Guid owner)
     {
-      LoadContext context = new LoadContext() { Owner = owner };
+      LoadContext context = new LoadContext() { Target = owner };
       return LoadObjectsInner(context, ImplementationRootRepository);
     }
 

@@ -12,7 +12,7 @@ namespace Afx.Data.MsSql
   public abstract class MsSqlObjectRepository<T> : ObjectRepository<T>
     where T : class, IAfxObject
   {
-    protected static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+    protected static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
     public abstract void FillObject(T target, LoadContext context, DataRow dr);
     public abstract string Columns { get; }
@@ -23,7 +23,7 @@ namespace Afx.Data.MsSql
     protected override bool IsNew(Guid id)
     {
       string sql = string.Format("SELECT CAST(COUNT(1) as bit) FROM {0} WHERE id=@id", typeof(T).AfxDbName());
-      log.Debug(sql);
+      Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
       {
@@ -40,16 +40,16 @@ namespace Afx.Data.MsSql
     protected override T LoadObjectCore(LoadContext context)
     {
       string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", Columns, TableJoin, typeof(T).AfxDbName());
-      //log.Debug(sql);
+      Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
       {
-        cmd.Parameters.AddWithValue("@id", context.Id);
+        cmd.Parameters.AddWithValue("@id", context.Target);
         DataSet ds = ExecuteDataSet(cmd);
         if (ds.Tables[0].Rows.Count != 1) throw new InvalidOperationException(Afx.Data.Properties.Resources.LoadOneRow);
         DataRow dr = ds.Tables[0].Rows[0];
         T target = (T)Activator.CreateInstance(Type.GetType((string)dr["AssemblyFullName"]));
-        target.Id = context.Id;
+        target.Id = context.Target;
         FillObject(target, context, dr);
         if (target.GetType() != typeof(T)) RepositoryInterfaceFor(target.GetType()).LoadObjectCore(target, context);
         target.IsDirty = false;
@@ -60,7 +60,7 @@ namespace Afx.Data.MsSql
     protected override void LoadObjectCore(T target, LoadContext context)
     {
       string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", Columns, TableJoin, typeof(T).AfxDbName());
-      //log.Debug(sql);
+      Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
       {
@@ -79,6 +79,7 @@ namespace Afx.Data.MsSql
     protected override T[] LoadObjectsCore(LoadContext context)
     {
       List<T> objects = new List<T>();
+      bool useListDetection = false;
 
       string sql = null;
       if (OwnerType == null) sql = string.Format("SELECT {0} FROM {1}", Columns, TableJoin);
@@ -86,20 +87,21 @@ namespace Afx.Data.MsSql
       {
         if (OwnerType != typeof(T))
         {
-          if (context.Owner == Guid.Empty) sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner] IS NULL", Columns, TableJoin, typeof(T).AfxDbName());
+          if (context.Target == Guid.Empty) sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner] IS NULL", Columns, TableJoin, typeof(T).AfxDbName());
           else sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner]=@id", Columns, TableJoin, typeof(T).AfxDbName());
         }
         else
         {
-          if (context.Owner == Guid.Empty) sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner] IS NULL UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
+          useListDetection = true;
+          if (context.Target == Guid.Empty) sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner] IS NULL UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
           else sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner]=@id UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
         }
       }
-      log.Debug(sql);
+      Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
       {
-        cmd.Parameters.AddWithValue("@id", context.Owner);
+        cmd.Parameters.AddWithValue("@id", context.Target);
         foreach (DataRow dr in ExecuteDataSet(cmd).Tables[0].Rows)
         {
           T target = (T)Activator.CreateInstance(Type.GetType((string)dr["AssemblyFullname"]));
@@ -109,7 +111,7 @@ namespace Afx.Data.MsSql
 
           Guid ownerId = Guid.Empty;
           if (target.Owner != null) ownerId = target.Owner.Id;
-          if (ownerId == context.Owner) objects.Add(target);
+          if (!useListDetection || (useListDetection && ownerId == context.Target)) objects.Add(target);
           target.IsDirty = false;
         }
       }
@@ -124,6 +126,8 @@ namespace Afx.Data.MsSql
     protected override void DeleteObjectCore(T target)
     {
       string sql = string.Format("DELETE FROM {0} WHERE [id]=@id", typeof(T).AfxDbName());
+      Log.Debug(sql);
+
       using (SqlCommand cmd = GetCommand(sql))
       {
         cmd.Parameters.AddWithValue("@id", target.Id);

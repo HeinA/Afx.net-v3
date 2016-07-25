@@ -41,7 +41,7 @@ namespace TestConsoleApplication
         if (isNew)
         {
           string sql = "INSERT INTO [Test].[Document] ([id], [RegisteredType], [DocumentNumber], [DocumentDate]) SELECT @id, [RT].[id], @dn, @dd FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {
@@ -55,7 +55,7 @@ namespace TestConsoleApplication
         else
         {
           string sql = "UPDATE [Test].[Document] SET [DocumentNumber]=@dn, [DocumentDate]=@dd WHERE [id]=@id";
-          log.Debug(sql);
+          Log.Debug(sql);
 
           using (SqlCommand cmd = GetCommand(sql))
           {

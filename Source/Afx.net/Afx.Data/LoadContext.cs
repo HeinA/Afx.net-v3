@@ -11,12 +11,10 @@ namespace Afx.Data
   {
     public LoadContext()
     {
-      Owner = Guid.Empty;
-      Id = Guid.Empty;
+      Target = Guid.Empty;
     }
 
-    public Guid Owner { get; set; }
-    public Guid Id { get; set; }
+    public Guid Target { get; set; }
 
     Dictionary<Guid, IAfxObject> mObjectDictionary = new Dictionary<Guid, IAfxObject>();
     public void RegisterObject(IAfxObject obj)
