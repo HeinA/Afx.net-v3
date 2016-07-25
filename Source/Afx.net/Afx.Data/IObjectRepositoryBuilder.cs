@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public interface IDataBuilder
+  public interface IObjectRepositoryBuilder
   {
-    void ValidateDataStructure();
+    void BuildRepositories();
   }
 }

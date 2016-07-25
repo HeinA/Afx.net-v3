@@ -57,6 +57,7 @@
     <Compile Include="ICommandProvider.cs" />
     <Compile Include="IDataBuilder.cs" />
     <Compile Include="IObjectRepository.cs" />
+    <Compile Include="IObjectRepositoryBuilder.cs" />
     <Compile Include="LoadContext.cs" />
     <Compile Include="ObjectTarget.cs" />
     <Compile Include="ObjectRepository.cs" />
@@ -66,6 +67,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ObjectRepositoryBuilder.cs" />
     <Compile Include="SaveContext.cs" />
     <Compile Include="TypeExtender.cs" />
   </ItemGroup>

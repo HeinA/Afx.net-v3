@@ -11,11 +11,11 @@ namespace Afx.Data
 {
   public class DataBuilder
   {
-    public static void DoRepositoryValidation()
+    public static void DoDataStructureValidation()
     {
       Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
       IDataBuilder builder = Afx.ExtensibilityManager.GetObject<IDataBuilder>(ConnectionScope.CurrentScope.ConnectionName);
-      builder.ValidateRepository();
+      builder.ValidateDataStructure();
     }
 
     public static DataSet ExecuteDataSet(IDbCommand cmd)

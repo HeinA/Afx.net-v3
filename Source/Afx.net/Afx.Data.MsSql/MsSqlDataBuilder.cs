@@ -11,22 +11,23 @@ using System.Threading.Tasks;
 
 namespace Afx.Data.MsSql
 {
-  public class MsSqlBuilder : DataBuilder, IDataBuilder
+  public class MsSqlDataBuilder : DataBuilder, IDataBuilder
   {
-    static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+    static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
     const string Owner = "Owner";
     const string Reference = "Reference";
     const string Id = "id";
     const string Ix = "ix";
     const string RegisteredType = "RegisteredType";
 
-    public void ValidateRepository()
+    public void ValidateDataStructure()
     {
       Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Afx.Data.Properties.Resources.NoConnectionScope);
 
       try
       {
-        log.Info("Database Validation Starting");
+        Log.Info("Database Validation Starting");
 
         List<TypeInfo> types = IdentifyPesistentTypes();
         ValidateSchemas(types);
@@ -35,11 +36,11 @@ namespace Afx.Data.MsSql
         ValidateTableProperties(types);
         WriteDeleteTriggers(types);
 
-        log.Info("Database Validation Completed");
+        Log.Info("Database Validation Completed");
       }
       catch (Exception ex)
       {
-        log.Error("Database Validation Failed", ex);
+        Log.Error("Database Validation Failed", ex);
         throw;
       }
     }
@@ -74,13 +75,13 @@ namespace Afx.Data.MsSql
     {
       List<TypeInfo> types = new List<TypeInfo>();
 
-      log.Info("Pesistent Type Identification Starting");
-      foreach (var bot in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentType())
+      Log.Info("Pesistent Type Identification Starting");
+      foreach (var bot in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
       {
-        log.InfoFormat("{{{0}}}", bot.AfxTypeName());
+        Log.InfoFormat("{{{0}}}", bot.AfxTypeName());
         types.Add(bot);
       }
-      log.Info("Pesistent Type Identification Completed");
+      Log.Info("Pesistent Type Identification Completed");
 
       return types;
     }
@@ -107,7 +108,7 @@ namespace Afx.Data.MsSql
 
     void ValidateSchemas(List<TypeInfo> types)
     {
-      log.Info("Schema Validation Starting");
+      Log.Info("Schema Validation Starting");
 
       List<string> schemas = new List<string>();
       schemas.Add("Afx");
@@ -119,7 +120,7 @@ namespace Afx.Data.MsSql
 
       foreach (var schema in schemas)
       {
-        log.InfoFormat("[{0}]", schema);
+        Log.InfoFormat("[{0}]", schema);
         string sqlSchema = string.Format("IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}') BEGIN EXEC('CREATE SCHEMA [{0}]') END", schema);
         using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sqlSchema))
         {
@@ -127,7 +128,7 @@ namespace Afx.Data.MsSql
         }
       }
 
-      log.Info("Schema Validation Completed");
+      Log.Info("Schema Validation Completed");
     }
 
     #endregion
@@ -173,7 +174,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTableStubs(List<TypeInfo> types)
     {
-      log.Info("Table Validation Starting");
+      Log.Info("Table Validation Starting");
 
       foreach (var t in types)
       {
@@ -188,7 +189,7 @@ namespace Afx.Data.MsSql
 
         if (count == 0)
         {
-          log.InfoFormat("[{0}].[{1}]", GetSchema(t), t.Name);
+          Log.InfoFormat("[{0}].[{1}]", GetSchema(t), t.Name);
           bool addType = false;
           if (t.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() != null) addType = true;
 
@@ -239,7 +240,7 @@ namespace Afx.Data.MsSql
         }
       }
 
-      log.Info("Table Validation Completed");
+      Log.Info("Table Validation Completed");
     }
 
     #endregion
@@ -248,7 +249,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTableProperties(List<TypeInfo> types)
     {
-      log.Info("Property Validation Starting");
+      Log.Info("Property Validation Starting");
 
       foreach (var t in types)
       {
@@ -305,7 +306,7 @@ namespace Afx.Data.MsSql
         #endregion
       }
 
-      log.Info("Property Validation Completed");
+      Log.Info("Property Validation Completed");
     }
 
     #region DropColumn()
@@ -317,7 +318,7 @@ namespace Afx.Data.MsSql
         DataRow dr1 = GetRelationship(type, (string)drColumn["COLUMN_NAME"]);
         if (dr1 != null)
         {
-          log.WarnFormat("Dropping Constraint [{0}]", dr1["ConstraintName"]);
+          Log.WarnFormat("Dropping Constraint [{0}]", dr1["ConstraintName"]);
 
           string sqlDrop = string.Format("ALTER TABLE [{0}].[{1}] DROP CONSTRAINT [{2}]", drColumn["TABLE_SCHEMA"], drColumn["TABLE_NAME"], dr1["ConstraintName"]);
           using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlDrop))
@@ -326,7 +327,7 @@ namespace Afx.Data.MsSql
           }
         }
 
-        log.WarnFormat("Dropping Column [{0}].[{1}].[{2}]", drColumn["TABLE_SCHEMA"], drColumn["TABLE_NAME"], drColumn["COLUMN_NAME"]);
+        Log.WarnFormat("Dropping Column [{0}].[{1}].[{2}]", drColumn["TABLE_SCHEMA"], drColumn["TABLE_NAME"], drColumn["COLUMN_NAME"]);
 
         string sqlAlter = string.Format("ALTER TABLE [{0}].[{1}] DROP COLUMN [{2}]", drColumn["TABLE_SCHEMA"], drColumn["TABLE_NAME"], drColumn["COLUMN_NAME"]);
         using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlAlter))
@@ -409,7 +410,7 @@ namespace Afx.Data.MsSql
     void CreateTableProperty(PropertyInfo pi, Type definingType, bool allowNull)
     {
       string dbTypeText = GetDbDataType(pi, definingType);
-      log.InfoFormat("{0}: {1}", pi.AfxDbName(definingType), dbTypeText);
+      Log.InfoFormat("{0}: {1}", pi.AfxDbName(definingType), dbTypeText);
 
       string schemaName = GetSchema(definingType);
       string sqlColumn = string.Format("ALTER TABLE [{0}].[{1}] ADD [{2}] {3}{4} NULL", schemaName, definingType.Name, pi.Name, dbTypeText, allowNull ? string.Empty : " NOT"); //TODO: Filestream
@@ -527,7 +528,7 @@ namespace Afx.Data.MsSql
     {
       try
       {
-        log.InfoFormat("Creating Constraint for {0}.[{1}]", ownerType.AfxDbName(), propertyName);
+        Log.InfoFormat("Creating Constraint for {0}.[{1}]", ownerType.AfxDbName(), propertyName);
         string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT FK_{1}_{2} FOREIGN KEY ([{3}]) REFERENCES [{4}].[{2}]	([{5}]) ON UPDATE NO ACTION ON DELETE {6}", GetSchema(ownerType), ownerType.Name, referencedType.Name, propertyName, GetSchema(referencedType), Id, cascadeDelete ? "CASCADE" : "NO ACTION");
         using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateConstraint))
         {
@@ -599,7 +600,7 @@ namespace Afx.Data.MsSql
           DeleteTriggerIfExists(type, InsteadOfDelete);
           if (mTableInsteadOfDeleteTriggers == null || !mTableInsteadOfDeleteTriggers.ContainsKey(type)) continue;
 
-          log.InfoFormat("Writing Instead Of Delete Trigger for {0}", type.AfxDbName());
+          Log.InfoFormat("Writing Instead Of Delete Trigger for {0}", type.AfxDbName());
 
           StringWriter sw = mTableInsteadOfDeleteTriggers[type];
           using (StringWriter swOuter = new StringWriter())
@@ -625,7 +626,7 @@ namespace Afx.Data.MsSql
           DeleteTriggerIfExists(type, AfterDelete);
           if (mTableAfterDeleteTriggers == null || !mTableAfterDeleteTriggers.ContainsKey(type)) continue;
 
-          log.InfoFormat("Writing After Delete Trigger for {0}", type.AfxDbName());
+          Log.InfoFormat("Writing After Delete Trigger for {0}", type.AfxDbName());
 
           StringWriter sw = mTableAfterDeleteTriggers[type];
           using (StringWriter swOuter = new StringWriter())

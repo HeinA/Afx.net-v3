@@ -37,7 +37,7 @@ namespace Afx.Data
     }
 
     static List<TypeInfo> mSortedByDataDependencies;
-    public static IEnumerable<TypeInfo> PersistentType(this IEnumerable<TypeInfo> types)
+    public static IEnumerable<TypeInfo> PersistentTypesInDependecyOrder(this IEnumerable<TypeInfo> types)
     {
       if (mSortedByDataDependencies == null)
       {

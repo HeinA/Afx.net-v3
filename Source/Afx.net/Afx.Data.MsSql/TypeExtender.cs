@@ -10,12 +10,12 @@ namespace Afx.Data.MsSql
   {
     public static string AfxDbName(this Type type, string propertyName)
     {
-      return string.Format("[{0}].[{1}].[{2}]", MsSqlBuilder.GetSchema(type), type.Name, propertyName);
+      return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(type), type.Name, propertyName);
     }
 
     public static string AfxDbName(this Type type)
     {
-      return string.Format("[{0}].[{1}]", MsSqlBuilder.GetSchema(type), type.Name);
+      return string.Format("[{0}].[{1}]", MsSqlDataBuilder.GetSchema(type), type.Name);
     }
   }
 }

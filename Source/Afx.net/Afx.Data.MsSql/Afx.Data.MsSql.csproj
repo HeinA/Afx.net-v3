@@ -59,9 +59,10 @@
     <Compile Include="IColumnCreated.cs" />
     <Compile Include="IDbText.cs" />
     <Compile Include="IDefaultDbText.cs" />
-    <Compile Include="MsSqlBuilder.cs" />
+    <Compile Include="MsSqlDataBuilder.cs" />
     <Compile Include="MsSqlCommandProvider.cs" />
     <Compile Include="MsSqlObjectRepository.cs" />
+    <Compile Include="MsSqlRepositoryBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyInfoExtender.cs" />
     <Compile Include="TypeExtender.cs" />

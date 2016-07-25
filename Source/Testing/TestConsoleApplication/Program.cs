@@ -21,10 +21,12 @@ namespace TestConsoleApplication
         using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
         using (new ConnectionScope())
         {
-          DataBuilder.DoRepositoryValidation();
+          DataBuilder.DoDataStructureValidation();
 
           ts.Complete();
         }
+
+        ObjectRepositoryBuilder.DoRepositoryRebuild();
 
         using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
         using (new ConnectionScope())

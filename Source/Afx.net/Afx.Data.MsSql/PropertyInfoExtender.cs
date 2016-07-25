@@ -11,12 +11,12 @@ namespace Afx.Data.MsSql
   {
     public static string AfxDbName(this PropertyInfo pi)
     {
-      return string.Format("[{0}].[{1}].[{2}]", MsSqlBuilder.GetSchema(pi.DeclaringType), pi.DeclaringType.Name, pi.Name);
+      return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(pi.DeclaringType), pi.DeclaringType.Name, pi.Name);
     }
 
     public static string AfxDbName(this PropertyInfo pi, Type definingType)
     {
-      return string.Format("[{0}].[{1}].[{2}]", MsSqlBuilder.GetSchema(definingType == null ? pi.DeclaringType : definingType), definingType == null ? pi.DeclaringType.Name : definingType.Name, pi.Name);
+      return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(definingType == null ? pi.DeclaringType : definingType), definingType == null ? pi.DeclaringType.Name : definingType.Name, pi.Name);
     }
   }
 }
