@@ -13,20 +13,36 @@ namespace Afx.Data
   public abstract class ObjectRepository<T> : ObjectRepository, IObjectRepository
     where T : class, IAfxObject
   {
+    Type mImplementationRoot;
+    Type ImplementationRoot
+    {
+      get
+      {
+        if (mImplementationRoot != null) return mImplementationRoot;
+        mImplementationRoot = typeof(T).GetAfxImplementationRoot();
+        Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
+        return mImplementationRoot;
+      }
+    }
+
+    IObjectRepository mImplementationRootRepository;
+    IObjectRepository ImplementationRootRepository
+    {
+      get
+      {
+        if (mImplementationRootRepository != null) return mImplementationRootRepository;
+        mImplementationRootRepository = GetRepository(ImplementationRoot);
+        return mImplementationRootRepository;
+      }
+    }
+
     #region LoadObject()
 
     public T LoadObject(Guid id)
     {
-      Type afxImplementationRoot = typeof(T).GetAfxImplementationRoot();
-      Guard.ThrowOperationExceptionIfNull(afxImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-
-      var repo = GetRepository(afxImplementationRoot);
-      Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, afxImplementationRoot);
-
-      LoadContext context = repo.GetInstance(id);
+      LoadContext context = ImplementationRootRepository.GetInstance(id);
       Type instanceType = context.LoadTargets[0].AssemblyType;
-      repo = GetRepository(instanceType);
-      Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, instanceType);
+      var repo = GetRepository(instanceType);
 
       T obj = (T)repo.LoadObjectCore(context);
       return obj;
@@ -43,14 +59,8 @@ namespace Afx.Data
 
     public ObjectCollection<T> LoadObjects(Guid owner)
     {
-      Type afxImplementationRoot = typeof(T).GetAfxImplementationRoot();
-      Guard.ThrowOperationExceptionIfNull(afxImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-
-      var repo = GetRepository(afxImplementationRoot);
-      Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, afxImplementationRoot);
-
-      LoadContext context = repo.GetInstances(owner);
-      return LoadObjectsInner(context, repo);
+      LoadContext context = ImplementationRootRepository.GetInstances(owner);
+      return LoadObjectsInner(context, ImplementationRootRepository);
     }
 
     ObjectCollection<T> LoadObjectsInner(LoadContext context, IObjectRepository repo)
@@ -58,9 +68,7 @@ namespace Afx.Data
       ObjectCollection<T> objects = new ObjectCollection<T>();
       foreach (var instanceType in context.LoadTargets.DistinctBy(t => t.AssemblyType).Select(t => t.AssemblyType))
       {
-        Guard.ThrowOperationExceptionIfNull(instanceType, Properties.Resources.CouldNotDetermineType);
         repo = GetRepository(instanceType);
-        Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, instanceType);
 
         LoadContext lc = new LoadContext(context.Owner);
         lc.LoadObjectTargets(context.LoadTargets.Where(t => t.AssemblyType.Equals(instanceType)));
@@ -89,14 +97,10 @@ namespace Afx.Data
 
     void SaveObjectInner(T target, SaveContext context)
     {
-      Type afxImplementationRoot = typeof(T).GetAfxImplementationRoot();
-      Guard.ThrowOperationExceptionIfNull(afxImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-      var repo = GetRepository(afxImplementationRoot);
-      Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, afxImplementationRoot);
-      context.IsNew = repo.IsNew(target.Id);
+      context.IsNew = ImplementationRootRepository.IsNew(target.Id);
 
       Type targetType = target.GetType();
-      repo = GetRepository(targetType);
+      var repo = GetRepository(targetType);
       Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, targetType);
 
       repo.SaveObjectCore(target, context);
@@ -121,14 +125,10 @@ namespace Afx.Data
       DeleteContext deleteContext = new DeleteContext();
       foreach (var item in target)
       {
-        Type afxImplementationRoot = typeof(T).GetAfxImplementationRoot();
-        Guard.ThrowOperationExceptionIfNull(afxImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-        var repo = GetRepository(afxImplementationRoot);
-        Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, afxImplementationRoot);
-        context.IsNew = repo.IsNew(item.Id);
+        context.IsNew = ImplementationRootRepository.IsNew(item.Id);
 
         Type targetType = item.GetType();
-        repo = GetRepository(targetType);
+        var repo = GetRepository(targetType);
         Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, targetType);
 
         repo.SaveObjectCore(item, context);
