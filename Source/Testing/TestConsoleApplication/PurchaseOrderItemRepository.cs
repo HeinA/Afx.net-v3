@@ -15,50 +15,45 @@ namespace TestConsoleApplication
   [Export(typeof(IObjectRepository))]
   public class PurchaseOrderItemRepository : MsSqlObjectRepository<PurchaseOrderItem>
   {
-    public override string Columns
+    public override void FillObject(PurchaseOrderItem target, LoadContext context, DataRow dr)
     {
-      get { return "[Test].[PurchaseOrderItem].[id], [Test].[PurchaseOrderItem].[RegisteredType], [Test].[PurchaseOrderItem].[Owner], [Test].[PurchaseOrderItem].[Reference]"; }
-    }
-
-    public override string TableName
-    {
-      get { return "[Test].[PurchaseOrderItem]"; }
-    }
-
-    public override void FillObject(PurchaseOrderItem target, DataRow dr)
-    {
-      if (dr["Reference"] != DBNull.Value) target.Reference = GetRepository<InventoryItem>().LoadObject((Guid)dr["Reference"]);
+      if (dr["Reference"] != DBNull.Value) target.Reference = RepositoryFor<InventoryItem>().LoadObject((Guid)dr["Reference"]);
     }
 
     protected override void SaveObjectCore(PurchaseOrderItem target, SaveContext context)
     {
-      GetRepository<InventoryItem>().SaveObject(target.Reference);
+      RepositoryFor<InventoryItem>().SaveObject(target.Reference, context);
 
-      if (context.IsNew)
+      bool isNew = true;
+      if (context.ShouldProcess(target))
       {
-        string sql = "INSERT INTO [Test].[PurchaseOrderItem] ([id], [RegisteredType], [Owner], [Reference]) SELECT @id, [RT].[id], @o, @r FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
-        log.Debug(sql);
-
-        using (SqlCommand cmd = GetCommand(sql))
+        isNew = ImplementationRootRepository.IsNew(target.Id);
+        if (isNew)
         {
-          cmd.Parameters.AddWithValue("@id", target.Id);
-          cmd.Parameters.AddWithValue("@fn", target.GetType().AfxTypeName());
-          cmd.Parameters.AddWithValue("@o", target.Owner.Id);
-          cmd.Parameters.AddWithValue("@r", target.Reference.Id);
-          cmd.ExecuteNonQuery();
+          string sql = "INSERT INTO [Test].[PurchaseOrderItem] ([id], [RegisteredType], [Owner], [Reference]) SELECT @id, [RT].[id], @o, @r FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
+          log.Debug(sql);
+
+          using (SqlCommand cmd = GetCommand(sql))
+          {
+            cmd.Parameters.AddWithValue("@id", target.Id);
+            cmd.Parameters.AddWithValue("@fn", target.GetType().AfxTypeName());
+            cmd.Parameters.AddWithValue("@o", target.Owner.Id);
+            cmd.Parameters.AddWithValue("@r", target.Reference.Id);
+            cmd.ExecuteNonQuery();
+          }
         }
-      }
-      else
-      {
-        string sql = "UPDATE [Test].[PurchaseOrderItem] SET [Owner]=@o, [Reference]=@r WHERE [id]=@id";
-        log.Debug(sql);
-
-        using (SqlCommand cmd = GetCommand(sql))
+        else
         {
-          cmd.Parameters.AddWithValue("@o", target.Owner.Id);
-          cmd.Parameters.AddWithValue("@r", target.Reference.Id);
-          cmd.Parameters.AddWithValue("@id", target.Id);
-          cmd.ExecuteNonQuery();
+          string sql = "UPDATE [Test].[PurchaseOrderItem] SET [Owner]=@o, [Reference]=@r WHERE [id]=@id";
+          log.Debug(sql);
+
+          using (SqlCommand cmd = GetCommand(sql))
+          {
+            cmd.Parameters.AddWithValue("@o", target.Owner.Id);
+            cmd.Parameters.AddWithValue("@r", target.Reference.Id);
+            cmd.Parameters.AddWithValue("@id", target.Id);
+            cmd.ExecuteNonQuery();
+          }
         }
       }
     }

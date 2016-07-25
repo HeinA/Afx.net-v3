@@ -10,42 +10,15 @@ using System.Threading.Tasks;
 namespace Afx.Data
 {
   [AfxBaseType]
-  public abstract class ObjectRepository<T> : ObjectRepository, IObjectRepository
+  public abstract class ObjectRepository<T> : ObjectRepository<T>.IObjectRepository
     where T : class, IAfxObject
   {
-    Type mImplementationRoot;
-    Type ImplementationRoot
-    {
-      get
-      {
-        if (mImplementationRoot != null) return mImplementationRoot;
-        mImplementationRoot = typeof(T).GetAfxImplementationRoot();
-        Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
-        return mImplementationRoot;
-      }
-    }
-
-    IObjectRepository mImplementationRootRepository;
-    IObjectRepository ImplementationRootRepository
-    {
-      get
-      {
-        if (mImplementationRootRepository != null) return mImplementationRootRepository;
-        mImplementationRootRepository = GetRepository(ImplementationRoot);
-        return mImplementationRootRepository;
-      }
-    }
-
     #region LoadObject()
 
     public T LoadObject(Guid id)
     {
-      LoadContext context = ImplementationRootRepository.GetInstance(id);
-      Type instanceType = context.LoadTargets[0].AssemblyType;
-      var repo = GetRepository(instanceType);
-
-      T obj = (T)repo.LoadObjectCore(context);
-      return obj;
+      LoadContext context = new LoadContext() { Id = id }; 
+      return (T)ImplementationRootRepository.LoadObjectCore(context);
     }
 
     #endregion
@@ -59,24 +32,17 @@ namespace Afx.Data
 
     public ObjectCollection<T> LoadObjects(Guid owner)
     {
-      LoadContext context = ImplementationRootRepository.GetInstances(owner);
+      LoadContext context = new LoadContext() { Owner = owner };
       return LoadObjectsInner(context, ImplementationRootRepository);
     }
 
     ObjectCollection<T> LoadObjectsInner(LoadContext context, IObjectRepository repo)
     {
       ObjectCollection<T> objects = new ObjectCollection<T>();
-      foreach (var instanceType in context.LoadTargets.DistinctBy(t => t.AssemblyType).Select(t => t.AssemblyType))
+      IAfxObject[] objs = repo.LoadObjectsCore(context);
+      foreach (T obj in objs)
       {
-        repo = GetRepository(instanceType);
-
-        LoadContext lc = new LoadContext(context.Owner);
-        lc.LoadObjectTargets(context.LoadTargets.Where(t => t.AssemblyType.Equals(instanceType)));
-        IAfxObject[] objs = repo.LoadObjectsCore(lc);
-        foreach (T obj in objs)
-        {
-          objects.Add(obj);
-        }
+        objects.Add(obj);
       }
       return objects;
     }
@@ -87,82 +53,113 @@ namespace Afx.Data
 
     public void SaveObject(T target)
     {
-      SaveObjectInner(target, new SaveContext());
+      SaveObject(target, new SaveContext());
     }
 
-    public void SaveObject(T target, bool merge)
+    public void SaveObject(T target, SaveContext context)
     {
-      SaveObjectInner(target, new SaveContext() { Merge = merge });
-    }
-
-    void SaveObjectInner(T target, SaveContext context)
-    {
-      context.IsNew = ImplementationRootRepository.IsNew(target.Id);
-
-      Type targetType = target.GetType();
-      var repo = GetRepository(targetType);
-      Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, targetType);
-
-      repo.SaveObjectCore(target, context);
+      RepositoryInterfaceFor(target.GetType()).SaveObjectCore(target, context);
     }
 
     #endregion
 
     #region SaveObjects
 
-    public void SaveObjects(ObjectCollection<T> target)
+    public void SaveObjects(ObjectCollection<T> targets)
     {
-      SaveObjectsInner(target, new SaveContext());
+      SaveObjects(targets, new SaveContext());
     }
 
-    public void SaveObjects(ObjectCollection<T> target, bool merge)
+    public void SaveObjects(ObjectCollection<T> targets, SaveContext context)
     {
-      SaveObjectsInner(target, new SaveContext() { Merge = merge });
-    }
-
-    void SaveObjectsInner(ObjectCollection<T> target, SaveContext context)
-    {
-      DeleteContext deleteContext = new DeleteContext();
-      foreach (var item in target)
+      foreach (var item in targets)
       {
-        context.IsNew = ImplementationRootRepository.IsNew(item.Id);
-
-        Type targetType = item.GetType();
-        var repo = GetRepository(targetType);
-        Guard.ThrowOperationExceptionIfNull(repo, Properties.Resources.TypeRepositoryNotFound, targetType);
-
-        repo.SaveObjectCore(item, context);
-        deleteContext.ActiveTargets.Add(item.Id);
+        RepositoryInterfaceFor(item.GetType()).SaveObjectCore(item, context);
       }
-      if (!context.Merge) GetRepositoryInterface<T>().DeleteObjectsCore(deleteContext);
+      if (!context.Merge)
+      {
+        foreach (T obj in targets.DeletedItems)
+        {
+          DeleteObject(obj);
+        }
+      }
     }
+
+    #endregion
+
+    #region DeleteObject
+
+    public void DeleteObject(T target)
+    {
+      ImplementationRootRepository.DeleteObjectCore(target);
+    }
+
+    #endregion
+
+    #region Protected Properties
+
+    #region Type ImplementationRoot
+
+    Type mImplementationRoot;
+    bool mImplementationRootProcessed = false;
+    protected Type ImplementationRoot
+    {
+      get
+      {
+        if (mImplementationRoot != null) return mImplementationRoot;
+        if (mImplementationRootProcessed) Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
+        mImplementationRoot = typeof(T).GetAfxImplementationRoot();
+        Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
+        mImplementationRootProcessed = true;
+        return mImplementationRoot;
+      }
+    }
+
+    #endregion
+
+    #region IObjectRepository ImplementationRootRepository
+
+    IObjectRepository mImplementationRootRepository;
+    protected IObjectRepository ImplementationRootRepository
+    {
+      get
+      {
+        if (mImplementationRootRepository != null) return mImplementationRootRepository;
+        mImplementationRootRepository = GetRepository(ImplementationRoot);
+        return mImplementationRootRepository;
+      }
+    }
+
+    #endregion
 
     #endregion
 
     #region IObjectRepository
 
-    protected abstract LoadContext GetInstance(Guid id);
-    LoadContext IObjectRepository.GetInstance(Guid id)
+    #region Protected Definition
+
+    protected interface IObjectRepository
     {
-      return GetInstance(id);
+      Type TargetType { get; }
+
+      bool IsNew(Guid id);
+
+      IAfxObject LoadObjectCore(LoadContext context);
+      void LoadObjectCore(IAfxObject target, LoadContext context);
+
+      IAfxObject[] LoadObjectsCore(LoadContext context);
+
+      void SaveObjectCore(IAfxObject target, SaveContext context);
+
+      void DeleteObjectCore(IAfxObject target);
     }
 
-    protected abstract LoadContext GetInstances(Guid owner);
-    LoadContext IObjectRepository.GetInstances(Guid owner)
-    {
-      return GetInstances(owner);
-    }
+    #endregion
 
     protected abstract bool IsNew(Guid id);
     bool IObjectRepository.IsNew(Guid id)
     {
       return IsNew(id);
-    }
-
-    protected abstract void DeleteObjectsCore(DeleteContext context);
-    void IObjectRepository.DeleteObjectsCore(DeleteContext context)
-    {
-      DeleteObjectsCore(context);
     }
 
     protected abstract void SaveObjectCore(T target, SaveContext context);
@@ -177,41 +174,64 @@ namespace Afx.Data
       return LoadObjectCore(context);
     }
 
+    protected abstract void LoadObjectCore(T target, LoadContext context);
+    void IObjectRepository.LoadObjectCore(IAfxObject target, LoadContext context)
+    {
+      LoadObjectCore((T)target, context);
+    }
+
     protected abstract T[] LoadObjectsCore(LoadContext context);
     IAfxObject[] IObjectRepository.LoadObjectsCore(LoadContext context)
     {
       return LoadObjectsCore(context);
     }
 
+    protected abstract void DeleteObjectCore(T target);
+    void IObjectRepository.DeleteObjectCore(IAfxObject target)
+    {
+      DeleteObjectCore((T)target);
+    }
+
     Type IObjectRepository.TargetType { get { return typeof(T); } }
 
     #endregion
-  }
 
-  public class ObjectRepository
-  {
-    public static ObjectRepository<T> GetRepository<T>()
-      where T : class, IAfxObject
+    #region Statics
+
+    public static ObjectRepository<T> Instance()
     {
       return (ObjectRepository<T>)GetRepository(typeof(T));
     }
 
-    public static IObjectRepository GetRepositoryInterface<T>()
-      where T : class, IAfxObject
+    protected static ObjectRepository<T1> RepositoryFor<T1>()
+      where T1 : class, IAfxObject
     {
-      return GetRepository(typeof(T));
+      return (ObjectRepository<T1>)GetRepository(typeof(T));
     }
 
-    internal static IObjectRepository GetRepository(Type objectType)
+    protected static IObjectRepository RepositoryInterfaceFor(Type type)
     {
-      IObjectRepository or = (IObjectRepository)Afx.ExtensibilityManager.GetObjects<IObjectRepository>().FirstOrDefault(or1 => or1.TargetType.Equals(objectType));
-      Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, objectType);
-      return or;
+      return GetRepository(type);
+    }
+
+    protected static IObjectRepository RepositoryInterfaceFor<T1>()
+      where T1 : class, IAfxObject
+    {
+      return GetRepository(typeof(T1));
     }
 
     protected static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       return DataBuilder.ExecuteDataSet(cmd);
     }
+
+    static IObjectRepository GetRepository(Type objectType)
+    {
+      var or = Afx.ExtensibilityManager.GetObjects<IObjectRepository>().FirstOrDefault(or1 => or1.TargetType.Equals(objectType));
+      Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, objectType);
+      return or;
+    }
+
+    #endregion
   }
 }

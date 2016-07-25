@@ -12,22 +12,5 @@ namespace TestConsoleApplication
   [OwnedReference]
   public class PurchaseOrderItem : AssociativeObject<PurchaseOrder, InventoryItem>
   {
-    #region Constructors
-
-    public PurchaseOrderItem()
-    {
-    }
-
-    public PurchaseOrderItem(Guid id)
-      : base(id)
-    {
-    }
-
-    public PurchaseOrderItem(string id)
-      : base(id)
-    {
-    }
-
-    #endregion
   }
 }

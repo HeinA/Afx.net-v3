@@ -67,7 +67,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SaveContext.cs" />
-    <Compile Include="T.cs" />
     <Compile Include="TypeExtender.cs" />
   </ItemGroup>
   <ItemGroup>

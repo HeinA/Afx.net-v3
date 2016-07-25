@@ -9,7 +9,8 @@ namespace Afx
 {
   public interface IAfxObject : INotifyPropertyChanged //, INotifyDataErrorInfo
   {
-    Guid Id { get; }
+    Guid Id { get; set; }
     IAfxObject Owner { get; set; }
+    bool IsDirty { get; set; }
   }
 }

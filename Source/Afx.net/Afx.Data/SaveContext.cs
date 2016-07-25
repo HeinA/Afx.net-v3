@@ -8,7 +8,31 @@ namespace Afx.Data
 {
   public class SaveContext
   {
-    public bool IsNew { get; set; }
-    public bool Merge { get; set; }
+    public SaveContext()
+    {
+      OnlyProcessDirty = true;
+      Merge = false;
+    }
+
+    public SaveContext(bool merge)
+      : this()
+    {
+      Merge = merge;
+    }
+
+    public SaveContext(bool merge, bool onlyProcessDirty)
+      : this(merge)
+    {
+      OnlyProcessDirty = onlyProcessDirty;
+    }
+
+    public bool Merge { get; private set; }
+    public bool OnlyProcessDirty { get; private set; }
+    //public bool IsNew { get; internal set; }
+
+    public bool ShouldProcess(IAfxObject target)
+    {
+      return (!OnlyProcessDirty || (OnlyProcessDirty && target.IsDirty));
+    }
   }
 }

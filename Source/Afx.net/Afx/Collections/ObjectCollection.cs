@@ -115,6 +115,7 @@ namespace Afx.Collections
       item.Owner = Owner;
       item.PropertyChanged += ItemPropertyChanged;
       mDictionary.Add(item.Id, item);
+      RemoveDeletedItem(item);
     }
 
     #endregion
@@ -126,6 +127,7 @@ namespace Afx.Collections
       item.Owner = null;
       item.PropertyChanged -= ItemPropertyChanged;
       mDictionary.Remove(item.Id);
+      AddDeletedItem(item);
     }
 
     #endregion
@@ -192,5 +194,27 @@ namespace Afx.Collections
     }
 
     #endregion
+
+    List<IAfxObject> mDeletedItems;
+    public IAfxObject[] DeletedItems
+    {
+      get
+      {
+        if (mDeletedItems == null) return new IAfxObject[0];
+        return mDeletedItems.ToArray();
+      }
+    }
+
+    protected void AddDeletedItem(IAfxObject obj)
+    {
+      if (mDeletedItems == null) mDeletedItems = new List<IAfxObject>();
+      mDeletedItems.Add(obj);
+    }
+
+    protected void RemoveDeletedItem(IAfxObject obj)
+    {
+      if (mDeletedItems == null) return;
+      mDeletedItems.Remove(obj);
+    }
   }
 }

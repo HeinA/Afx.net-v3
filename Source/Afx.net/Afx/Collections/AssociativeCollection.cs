@@ -71,6 +71,8 @@ namespace Afx.Collections
         item.PropertyChanged -= ItemPropertyChanged;
         item.PropertyChanged += ItemPropertyChanged;
       }
+
+      RemoveDeletedItem(ass);
     }
 
     #endregion
@@ -84,8 +86,10 @@ namespace Afx.Collections
         TAssociative ass = (TAssociative)mDictionary[item];
         ass.PropertyChanged -= ItemPropertyChanged;
         mDictionary.Remove(item);
+        RemoveDeletedItem(ass);
       }
       if (IsCompositeReference) item.PropertyChanged -= ItemPropertyChanged;
+
     }
 
     #endregion

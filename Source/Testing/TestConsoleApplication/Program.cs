@@ -1,4 +1,5 @@
-﻿using Afx.Collections;
+﻿using Afx;
+using Afx.Collections;
 using Afx.Data;
 using System;
 using System.Collections.Generic;
@@ -28,12 +29,15 @@ namespace TestConsoleApplication
         using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
         using (new ConnectionScope())
         {
+
+          //Document d = ObjectRepository.GetRepository<Document>().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
+
           ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
           //for (int i = 0; i < 100; i++)
           //{
           //  LedgerAccount a = new LedgerAccount() { Name = string.Format("Root {0}", i) };
           //  accounts.Add(a);
-          //  for (int ii = 0; ii < 10; ii++)
+          //  for (int ii = 0; ii < 100; ii++)
           //  {
           //    LedgerAccount a1 = new LedgerAccount() { Name = string.Format("Child {0}.{1}", i, ii) };
           //    a.Accounts.Add(a1);
@@ -44,13 +48,22 @@ namespace TestConsoleApplication
           //    }
           //  }
           //}
+
           Stopwatch sw = new Stopwatch();
           sw.Start();
-          accounts = ObjectRepository.GetRepository<LedgerAccount>().LoadObjects();
+          using (new StateSuppressor())
+          {
+            accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
+          }
+          //accounts[67].Accounts[57].Name = "aaaa";
+          //accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
+          //accounts.RemoveAt(5);
+
           Console.WriteLine(sw.ElapsedMilliseconds);
           sw.Restart();
-          ObjectRepository.GetRepository<LedgerAccount>().SaveObjects(accounts);
+          ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
           Console.WriteLine(sw.ElapsedMilliseconds);
+
           //accounts = ObjectRepository.GetRepository<LedgerAccount>().LoadObjects();
 
           //PurchaseOrder po = ObjectRepository.GetRepository<PurchaseOrder>().LoadObject(Guid.Parse("{7DCB388B-E72C-42D6-B290-89D6EEE7BC4B}"));
@@ -60,7 +73,7 @@ namespace TestConsoleApplication
 
           //ObjectRepository.GetRepository<Document>().SaveObject(po);
 
-          //Document d = ObjectRepository.GetRepository<Document>().LoadObject(po.Id);
+          //
 
           ts.Complete();
         }

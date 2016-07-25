@@ -11,24 +11,6 @@ namespace TestConsoleApplication
 {
   public class PurchaseOrder : Document
   {
-    #region Constructors
-
-    public PurchaseOrder()
-    {
-    }
-
-    public PurchaseOrder(Guid id)
-      : base(id)
-    {
-    }
-
-    public PurchaseOrder(string id)
-      : base(id)
-    {
-    }
-
-    #endregion
-
     [Persistent]
     public bool IsComplete { get; set; }
 

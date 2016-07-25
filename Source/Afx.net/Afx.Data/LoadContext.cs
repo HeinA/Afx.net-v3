@@ -12,24 +12,33 @@ namespace Afx.Data
     public LoadContext()
     {
       Owner = Guid.Empty;
+      Id = Guid.Empty;
     }
 
-    public LoadContext(Guid owner)
+
+    public Guid Owner { get; set; }
+    public Guid Id { get; set; }
+
+    Dictionary<Guid, IAfxObject> mObjectDictionary = new Dictionary<Guid, IAfxObject>();
+    public void RegisterObject(IAfxObject obj)
     {
-      Owner = owner;
+      mObjectDictionary.Add(obj.Id, obj);
     }
 
-    public Guid Owner { get; private set; }
-
-    Collection<ObjectTarget> mLoadTargets = new Collection<ObjectTarget>();
-    public Collection<ObjectTarget> LoadTargets
+    public IAfxObject GetObject(Guid id)
     {
-      get { return mLoadTargets; }
+      return mObjectDictionary[id];
     }
 
-    public void LoadObjectTargets(IEnumerable<ObjectTarget> targets)
-    {
-      mLoadTargets = new Collection<ObjectTarget>(targets.ToList());
-    }
+    //Collection<ObjectTarget> mLoadTargets = new Collection<ObjectTarget>();
+    //public Collection<ObjectTarget> LoadTargets
+    //{
+    //  get { return mLoadTargets; }
+    //}
+
+    //public void LoadObjectTargets(IEnumerable<ObjectTarget> targets)
+    //{
+    //  mLoadTargets = new Collection<ObjectTarget>(targets.ToList());
+    //}
   }
 }

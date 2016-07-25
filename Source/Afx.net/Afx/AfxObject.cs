@@ -72,7 +72,20 @@ namespace Afx
     public Guid Id
     {
       get { return mId; }
-      internal set { mId = value; }
+      set { mId = value; }
+    }
+
+    #endregion
+
+    #region bool IsDirty
+
+    public const string IsDirtyProperty = nameof(IsDirty);
+    bool mIsDirty = true;
+    [DataMember]
+    public bool IsDirty
+    {
+      get { return mIsDirty; }
+      set { if (!StateSuppressor.IsSuppressed || !value) mIsDirty = value; }
     }
 
     #endregion
@@ -151,6 +164,7 @@ namespace Afx
       else if ((object)field == (object)value) return false;
 
       field = value;
+      IsDirty = true;
       OnObjectEdited();
       OnPropertyChanged(propertyName);
 
