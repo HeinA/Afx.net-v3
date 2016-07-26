@@ -21,17 +21,5 @@ namespace TestConsoleApplication
     {
       get { return new SqlConnection(ConfigurationManager.ConnectionStrings[ConnectionName].ConnectionString); }
     }
-
-    [Export(ConnectionName, typeof(IDataBuilder))]
-    static MsSqlDataBuilder MsSqlDataBuilder
-    {
-      get { return new MsSqlDataBuilder(); }
-    }
-
-    [Export(ConnectionName, typeof(IObjectRepositoryBuilder))]
-    static MsSqlRepositoryBuilder MsSqlRepositoryBuilder
-    {
-      get { return new MsSqlRepositoryBuilder(); }
-    }
   }
 }

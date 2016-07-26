@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.SqlClient;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Afx.Data.MsSql
 {
+  [Export("System.Data.SqlClient.SqlConnection, System.Data", typeof(IDataBuilder))]
   public class MsSqlDataBuilder : DataBuilder, IDataBuilder
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);

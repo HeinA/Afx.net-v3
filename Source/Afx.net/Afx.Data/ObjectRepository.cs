@@ -221,6 +221,8 @@ namespace Afx.Data
 
     static IObjectRepository GetObject(Type type)
     {
+      Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
+
       string connectionName = ConnectionScope.CurrentScope.ConnectionName;
       string connectionTypeName = ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName();
 

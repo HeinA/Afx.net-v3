@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Afx.Data.MsSql
 {
   [Export("System.Data.SqlClient.SqlConnection, System.Data", typeof(IObjectRepositoryBuilder))]
-  public class MsSqlRepositoryBuilder : IObjectRepositoryBuilder
+  public class MsSqlObjectRepositoryBuilder : IObjectRepositoryBuilder
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 

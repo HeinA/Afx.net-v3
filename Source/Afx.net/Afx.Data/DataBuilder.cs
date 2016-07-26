@@ -14,7 +14,7 @@ namespace Afx.Data
     public static void DoDataStructureValidation()
     {
       Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
-      IDataBuilder builder = Afx.ExtensibilityManager.GetObject<IDataBuilder>(ConnectionScope.CurrentScope.ConnectionName);
+      IDataBuilder builder = Afx.ExtensibilityManager.GetObject<IDataBuilder>(ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName());
       builder.ValidateDataStructure();
     }
 
