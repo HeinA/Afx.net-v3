@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.Composition.Hosting;
 using System.Data;
 using System.Linq;
 using System.Reflection;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 namespace Afx.Data
 {
   [AfxBaseType]
-  public abstract class ObjectRepository<T> : IObjectRepository
+  public abstract class ObjectRepository<T> : ObjectRepository, IObjectRepository
     where T : class, IAfxObject
   {
     #region LoadObject()
@@ -202,48 +203,66 @@ namespace Afx.Data
 
     #region Statics
 
-    static Dictionary<Type, IObjectRepository> mRepositories = new Dictionary<Type, IObjectRepository>();
-
     public static ObjectRepository<T> Instance()
     {
       return RepositoryFor<T>();
     }
 
-    protected static ObjectRepository<T1> RepositoryFor<T1>()
-      where T1 : class, IAfxObject
+    #endregion
+  }
+
+  public class ObjectRepository
+  {
+    static ObjectRepository()
     {
-      if (!mRepositories.ContainsKey(typeof(T1)))
+    }
+
+    static Dictionary<string, Dictionary<Type, IObjectRepository>> mConnectionTypeNameRepositoryDictionary = new Dictionary<string, Dictionary<Type, IObjectRepository>>();
+
+    static IObjectRepository GetObject(Type type)
+    {
+      string connectionName = ConnectionScope.CurrentScope.ConnectionName;
+      string connectionTypeName = ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName();
+
+      if (!mConnectionTypeNameRepositoryDictionary.ContainsKey(connectionName))
       {
-        var or = Afx.ExtensibilityManager.GetObject<ObjectRepository<T1>>();
-        Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, typeof(T1));
-        mRepositories.Add(typeof(T1), or);
+        Dictionary<Type, IObjectRepository> dict = new Dictionary<Type, IObjectRepository>();
+        var orb = Afx.ExtensibilityManager.GetObject<IObjectRepositoryBuilder>(connectionTypeName);
+        foreach (var type1 in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
+        {
+          dict.Add(type1, orb.BuildRepository(type1));
+        }
+        mConnectionTypeNameRepositoryDictionary.Add(connectionName, dict);
       }
-      return (ObjectRepository<T1>)mRepositories[typeof(T1)];
+      else
+      {
+      }
+
+      var repositoryDictionary = mConnectionTypeNameRepositoryDictionary[connectionName];
+      return repositoryDictionary[type];
+    }
+
+
+    protected static ObjectRepository<T> RepositoryFor<T>()
+      where T : class, IAfxObject
+    {
+      return (ObjectRepository<T>)GetObject(typeof(T));
     }
 
     protected static IObjectRepository RepositoryInterfaceFor(Type type)
     {
-      if (!mRepositories.ContainsKey(type))
-      {
-        Type generic = typeof(ObjectRepository<>).MakeGenericType(type);
-        IObjectRepository or = (IObjectRepository)Afx.ExtensibilityManager.GetObject(generic);
-        Guard.ThrowOperationExceptionIfNull(or, Properties.Resources.TypeRepositoryNotFound, type);
-        mRepositories.Add(type, or);
-      }
-      return mRepositories[type];
+      return GetObject(type);
     }
 
-    protected static IObjectRepository RepositoryInterfaceFor<T1>()
-      where T1 : class, IAfxObject
+    protected static IObjectRepository RepositoryInterfaceFor<T>()
+      where T : class, IAfxObject
     {
-      return RepositoryFor<T1>();
+      return GetObject(typeof(T));
     }
 
     protected static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       return DataBuilder.ExecuteDataSet(cmd);
     }
-
-    #endregion
   }
 }

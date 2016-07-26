@@ -20,17 +20,10 @@ namespace Afx.Data
 
       ConnectionName = connectionName;
 
-      //if (ConnectionDictionary.ContainsKey(ConnectionName))
-      //{
-      //  ConnectionStack.Push(this);
-      //  return;
-      //}
-
       Connection = Afx.ExtensibilityManager.GetObject<IDbConnection>(ConnectionName);
       Guard.ThrowIfNull(Connection, nameof(ConnectionName), Properties.Resources.ConnectionStringNotDefined);
 
       Connection.Open();
-      //ConnectionDictionary.Add(ConnectionName, Connection);
       ConnectionStack.Push(this);
     }
 
@@ -56,32 +49,12 @@ namespace Afx.Data
     {
       ConnectionStack.Pop();
       Connection.Close();
-      //if (!ConnectionStack.Any(cs => cs.ConnectionName.Equals(ConnectionName))) 
-      //{
-      //  IDbConnection connection = ConnectionDictionary[ConnectionName];
-      //  ConnectionDictionary.Remove(ConnectionName);
-      //  connection.Close();
-      //}
     }
 
     public static ConnectionScope CurrentScope
     {
       get { return ConnectionStack.Count > 0 ? ConnectionStack.Peek() : null; }
     }
-
-    //public static IDbConnection GetConnection(string connectionName)
-    //{
-    //  Guard.ThrowIfNullOrEmpty(connectionName, nameof(connectionName));
-    //  if (!ConnectionDictionary.ContainsKey(connectionName)) throw new ArgumentException(Properties.Resources.NoSuchConnectionScope, nameof(connectionName));
-    //  return ConnectionDictionary[connectionName];
-    //}
-
-    //[ThreadStatic]
-    //static Dictionary<string, IDbConnection> mConnectionDictionary;
-    //static Dictionary<string, IDbConnection> ConnectionDictionary
-    //{
-    //  get { return mConnectionDictionary ?? (mConnectionDictionary = new Dictionary<string, IDbConnection>()); }
-    //}
 
     [ThreadStatic]
     static Stack<ConnectionScope> mConnectionStack;

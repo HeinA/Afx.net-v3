@@ -34,11 +34,9 @@ namespace TestConsoleApplication
     {
       RepositoryFor<InventoryItem>().SaveObject(target.Reference, context);
 
-      bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = IsNew(target.Id);
-        if (isNew)
+        if (IsNew(target.Id))
         {
           string sql = "INSERT INTO [Test].[PurchaseOrderItem] ([id], [RegisteredType], [Owner], [Reference]) SELECT @id, [RT].[id], @o, @r FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
           Log.Debug(sql);

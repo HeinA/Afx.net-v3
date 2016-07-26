@@ -279,7 +279,7 @@ namespace Afx
   [DataContract(Namespace = Constants.WcfNamespace, IsReference = true)]
   [AfxBaseType]
   public abstract class AfxObject<TOwner> : AfxObject
-    where TOwner : class, IAfxObject
+    where TOwner : IAfxObject
   {
     #region Constructors
 

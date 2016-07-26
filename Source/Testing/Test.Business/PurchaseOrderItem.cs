@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TestConsoleApplication
+namespace Test.Business
 {
   [Persistent]
   [CompositeReference]

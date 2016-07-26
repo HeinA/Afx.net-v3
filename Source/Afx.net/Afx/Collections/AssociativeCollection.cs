@@ -27,7 +27,7 @@ namespace Afx.Collections
     internal AssociativeCollection(AfxObject owner, string propertyName)
       : base(owner, propertyName)
     {
-      IsCompositeReference = typeof(TAssociative).GetTypeInfo().GetCustomAttribute<OwnedReferenceAttribute>(true) != null;
+      IsCompositeReference = typeof(TAssociative).GetTypeInfo().GetCustomAttribute<CompositeReferenceAttribute>(true) != null;
       mOrderedDictionary = new OrderedDictionary<TItem, TAssociative>();
       mDictionary = mOrderedDictionary;
     }

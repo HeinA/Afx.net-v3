@@ -23,11 +23,9 @@ namespace TestConsoleApplication
 
     protected override void SaveObjectCore(Document target, SaveContext context)
     {
-      bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = IsNew(target.Id);
-        if (isNew)
+        if (IsNew(target.Id))
         {
           string sql = "INSERT INTO [Test].[Document] ([id], [RegisteredType], [DocumentNumber], [DocumentDate]) SELECT @id, [RT].[id], @dn, @dd FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@fn";
           Log.Debug(sql);

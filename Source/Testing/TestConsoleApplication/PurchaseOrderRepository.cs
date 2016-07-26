@@ -34,18 +34,19 @@ namespace TestConsoleApplication
       if (dr["CustomerName"] != DBNull.Value) target.CustomerName = (string)dr["CustomerName"];
 
       IDictionary items = (IDictionary)target.Items;
-      foreach (var obj in RepositoryFor<PurchaseOrderItem>().LoadObjects(target.Id)) items.Add(obj.Reference, obj);
+      foreach (var obj in RepositoryFor<PurchaseOrderItem>().LoadObjects(target.Id))
+      {
+        items.Add(obj.Reference, obj);
+      }
     }
 
     protected override void SaveObjectCore(PurchaseOrder target, SaveContext context)
     {
       RepositoryInterfaceFor<Document>().SaveObjectCore(target, context);
 
-      bool isNew = true;
       if (context.ShouldProcess(target))
       {
-        isNew = IsNew(target.Id);
-        if (isNew)
+        if (IsNew(target.Id))
         {
           string sql = "INSERT INTO [Test].[PurchaseOrder] ([id], [IsComplete], [CustomerName]) VALUES (@id, @ic, @cn)";
           Log.Debug(sql);
@@ -71,18 +72,18 @@ namespace TestConsoleApplication
             cmd.ExecuteNonQuery();
           }
         }
+      }
 
-        foreach (var item in target.Items)
+      foreach (var item in target.Items)
+      {
+        PurchaseOrderItem ao = target.Items[item];
+        RepositoryFor<PurchaseOrderItem>().SaveObject(ao, context);
+      }
+      if (!context.Merge)
+      {
+        foreach (PurchaseOrderItem obj in target.Items.DeletedItems)
         {
-          PurchaseOrderItem ao = target.Items[item];
-          RepositoryFor<PurchaseOrderItem>().SaveObject(ao, context);
-        }
-        if (!context.Merge)
-        {
-          foreach (PurchaseOrderItem obj in target.Items.DeletedItems)
-          {
-            RepositoryFor<PurchaseOrderItem>().DeleteObject(obj);
-          }
+          RepositoryFor<PurchaseOrderItem>().DeleteObject(obj);
         }
       }
     }

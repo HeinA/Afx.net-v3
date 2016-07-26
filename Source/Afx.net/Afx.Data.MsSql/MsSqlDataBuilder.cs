@@ -290,7 +290,7 @@ namespace Afx.Data.MsSql
         }
 
         if (piOwner != null && piOwner.PropertyType.Equals(t)) ValidateCircularOwnerTrigger(t);
-        if (piReference != null && t.GetCustomAttribute<OwnedReferenceAttribute>(true) != null) ValidateOwnedReferenceTriggers(t, piReference.PropertyType);
+        if (piReference != null && t.GetCustomAttribute<CompositeReferenceAttribute>(true) != null) ValidateOwnedReferenceTriggers(t, piReference.PropertyType);
 
         #region Drop Old Columns
 

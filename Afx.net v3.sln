@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestConsoleApplication", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Afx.Extensibility", "Source\Afx.net\Afx.Extensibility\Afx.Extensibility.csproj", "{763EF435-E0EA-4203-80F6-03A81DCD351F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Business", "Source\Testing\Test.Business\Test.Business.csproj", "{12FD3514-0D9F-48CA-BEE3-4FCF6BCBE752}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{763EF435-E0EA-4203-80F6-03A81DCD351F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{763EF435-E0EA-4203-80F6-03A81DCD351F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{763EF435-E0EA-4203-80F6-03A81DCD351F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12FD3514-0D9F-48CA-BEE3-4FCF6BCBE752}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12FD3514-0D9F-48CA-BEE3-4FCF6BCBE752}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12FD3514-0D9F-48CA-BEE3-4FCF6BCBE752}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12FD3514-0D9F-48CA-BEE3-4FCF6BCBE752}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

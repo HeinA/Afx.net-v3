@@ -19,5 +19,4 @@ namespace Afx.Data
 
     void DeleteObjectCore(IAfxObject target);
   }
-
 }

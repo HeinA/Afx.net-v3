@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Afx.Data
 {
   [AttributeUsage(AttributeTargets.Class)]
-  public class OwnedReferenceAttribute : Attribute
+  public class CompositeReferenceAttribute : Attribute
   {
   }
 }

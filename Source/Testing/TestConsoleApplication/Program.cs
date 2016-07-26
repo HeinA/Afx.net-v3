@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Transactions;
+using Test.Business;
 
 namespace TestConsoleApplication
 {
@@ -26,20 +27,19 @@ namespace TestConsoleApplication
           ts.Complete();
         }
 
-        ObjectRepositoryBuilder.DoRepositoryRebuild();
-
         using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
         using (new ConnectionScope())
         {
 
-          Document d = ObjectRepository<Document>.Instance().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
+          //Document d = ObjectRepository<Document>.Instance().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
 
           ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
-          //for (int i = 0; i < 100; i++)
+          
+          //for (int i = 0; i < 10; i++)
           //{
           //  LedgerAccount a = new LedgerAccount() { Name = string.Format("Root {0}", i) };
           //  accounts.Add(a);
-          //  for (int ii = 0; ii < 100; ii++)
+          //  for (int ii = 0; ii < 10; ii++)
           //  {
           //    LedgerAccount a1 = new LedgerAccount() { Name = string.Format("Child {0}.{1}", i, ii) };
           //    a.Accounts.Add(a1);
@@ -57,13 +57,25 @@ namespace TestConsoleApplication
           {
             accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
           }
+          Console.WriteLine(sw.ElapsedMilliseconds);
+          sw.Restart();
 
           //accounts[67].Accounts[57].Name = "aaaa";
           //accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
           //accounts.RemoveAt(5);
 
+
+          ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
           Console.WriteLine(sw.ElapsedMilliseconds);
           sw.Restart();
+
+          using (new StateSuppressor())
+          {
+            accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
+          }
+          Console.WriteLine(sw.ElapsedMilliseconds);
+          sw.Restart();
+
           ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
           Console.WriteLine(sw.ElapsedMilliseconds);
 
