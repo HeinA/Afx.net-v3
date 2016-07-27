@@ -34,5 +34,7 @@ namespace Afx.Data
     {
       get { return ScopeStack.Count == 0 ? DefaultScope  : ScopeStack.Peek(); }
     }
+
+    static Dictionary<string, DataCache> mDataCacheDictionary = new Dictionary<string, DataCache>();
   }
 }

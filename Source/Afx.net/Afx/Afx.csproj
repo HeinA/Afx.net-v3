@@ -54,6 +54,7 @@
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Data\CompositeReferenceAttribute.cs" />
+    <Compile Include="Data\DataCacheAttribute.cs" />
     <Compile Include="Data\DefaultsToNullAttribute.cs" />
     <Compile Include="Data\PersistentAttribute.cs" />
     <Compile Include="AfxAssemblyAttribute.cs" />

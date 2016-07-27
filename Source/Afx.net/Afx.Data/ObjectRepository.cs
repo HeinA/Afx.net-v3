@@ -251,15 +251,15 @@ namespace Afx.Data
       return (ObjectRepository<T>)GetObject(typeof(T));
     }
 
-    protected static IObjectRepository RepositoryInterfaceFor(Type type)
-    {
-      return GetObject(type);
-    }
-
     protected static IObjectRepository RepositoryInterfaceFor<T>()
       where T : class, IAfxObject
     {
       return GetObject(typeof(T));
+    }
+
+    protected static IObjectRepository RepositoryInterfaceFor(Type type)
+    {
+      return GetObject(type);
     }
 
     protected static DataSet ExecuteDataSet(IDbCommand cmd)

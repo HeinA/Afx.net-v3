@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace Test.Business
 {
   [Persistent]
+  [DataCache]
   public class LedgerAccount : Afx.AfxObject<LedgerAccount>
   {
     #region string Name
@@ -25,6 +26,7 @@ namespace Test.Business
     #endregion
 
     public ObjectCollection<LedgerAccount> mAccounts;
+    [DataCache]
     public ObjectCollection<LedgerAccount> Accounts
     {
       get { return GetObjectCollection<LedgerAccount>(ref mAccounts); }

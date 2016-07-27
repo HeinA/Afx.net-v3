@@ -31,53 +31,67 @@ namespace TestConsoleApplication
         using (new ConnectionScope())
         {
 
+          DataCache.Initialize();
+
+          //cache.RefreshDataCache();
+
+
+          DataScopeCache dsc = DataCache.GetDataScopeCache();
+
+          var ong = DataCache.GetObject(Guid.Parse("{cb56a582-7ec5-452d-a72f-bdfd91900a13}"));
+
+          var dc = DataCache<LedgerAccount>.Get();
+          dc.DataCacheUpdated += Dc_DataCacheUpdated;
+          dc.Refresh();
+
           //Document d = ObjectRepository<Document>.Instance().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
 
-          ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
-          
-          //for (int i = 0; i < 10; i++)
+          //ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
+
+          ////for (int i = 0; i < 10; i++)
+          ////{
+          ////  LedgerAccount a = new LedgerAccount() { Name = string.Format("Root {0}", i) };
+          ////  accounts.Add(a);
+          ////  for (int ii = 0; ii < 10; ii++)
+          ////  {
+          ////    LedgerAccount a1 = new LedgerAccount() { Name = string.Format("Child {0}.{1}", i, ii) };
+          ////    a.Accounts.Add(a1);
+          ////    for (int iii = 0; iii < 10; iii++)
+          ////    {
+          ////      LedgerAccount a2 = new LedgerAccount() { Name = string.Format("Child {0}.{1}.{2}", i, ii, iii) };
+          ////      a1.Accounts.Add(a2);
+          ////    }
+          ////  }
+          ////}
+
+          //Stopwatch sw = new Stopwatch();
+          //sw.Start();
+          //using (new StateSuppressor())
           //{
-          //  LedgerAccount a = new LedgerAccount() { Name = string.Format("Root {0}", i) };
-          //  accounts.Add(a);
-          //  for (int ii = 0; ii < 10; ii++)
-          //  {
-          //    LedgerAccount a1 = new LedgerAccount() { Name = string.Format("Child {0}.{1}", i, ii) };
-          //    a.Accounts.Add(a1);
-          //    for (int iii = 0; iii < 10; iii++)
-          //    {
-          //      LedgerAccount a2 = new LedgerAccount() { Name = string.Format("Child {0}.{1}.{2}", i, ii, iii) };
-          //      a1.Accounts.Add(a2);
-          //    }
-          //  }
+          //  accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
           //}
+          //Console.WriteLine(sw.ElapsedMilliseconds);
+          //sw.Restart();
 
-          Stopwatch sw = new Stopwatch();
-          sw.Start();
-          using (new StateSuppressor())
-          {
-            accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
-          }
-          Console.WriteLine(sw.ElapsedMilliseconds);
-          sw.Restart();
+          ////accounts[67].Accounts[57].Name = "aaaa";
+          ////accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
+          ////accounts.RemoveAt(5);
+          //accounts[0].Name = "aaa";
 
-          //accounts[67].Accounts[57].Name = "aaaa";
-          //accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
-          //accounts.RemoveAt(5);
+          //var sc = new SaveContext();
+          //ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, sc);
+          //Console.WriteLine(sw.ElapsedMilliseconds);
+          //sw.Restart();
 
+          //using (new StateSuppressor())
+          //{
+          //  accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
+          //}
+          //Console.WriteLine(sw.ElapsedMilliseconds);
+          //sw.Restart();
 
-          ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
-          Console.WriteLine(sw.ElapsedMilliseconds);
-          sw.Restart();
-
-          using (new StateSuppressor())
-          {
-            accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
-          }
-          Console.WriteLine(sw.ElapsedMilliseconds);
-          sw.Restart();
-
-          ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
-          Console.WriteLine(sw.ElapsedMilliseconds);
+          //ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, new SaveContext());
+          //Console.WriteLine(sw.ElapsedMilliseconds);
 
           //accounts = ObjectRepository.GetRepository<LedgerAccount>().LoadObjects();
 
@@ -96,6 +110,10 @@ namespace TestConsoleApplication
 
       Console.WriteLine("Waiting...");
       Console.ReadKey();
+    }
+
+    private static void Dc_DataCacheUpdated(object sender, EventArgs e)
+    {
     }
   }
 }

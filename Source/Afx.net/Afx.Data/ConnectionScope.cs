@@ -23,7 +23,7 @@ namespace Afx.Data
       Connection = Afx.ExtensibilityManager.GetObject<IDbConnection>(ConnectionName);
       Guard.ThrowIfNull(Connection, nameof(ConnectionName), Properties.Resources.ConnectionStringNotDefined);
 
-      Connection.Open();
+      if (Connection.State == ConnectionState.Closed) Connection.Open();
       ConnectionStack.Push(this);
     }
 

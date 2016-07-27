@@ -133,6 +133,11 @@ namespace Afx.Data.MsSql
       tw.Indent--;
       tw.WriteLine("}");
       WriteUpdate(tw, type);
+      if (afxImplementationRoot == type)
+      {
+        tw.WriteLine("context.SavedObjects.Add(target);");
+        tw.WriteLine();
+      }
       tw.Indent--;
       tw.WriteLine("}");
       WriteSaveObjectCoreCollections(tw, type);
@@ -221,7 +226,8 @@ namespace Afx.Data.MsSql
         List<string> parameters = new List<string>();
         foreach (var parameter in GetWriteColumns(type, false))
         {
-          parameters.Add(string.Format("{0}=@P_{1}", parameter, count++));
+          if (parameter == "[Owner]") parameters.Add("[Owner]=@owner");
+          else parameters.Add(string.Format("{0}=@P_{1}", parameter, count++));
         }
         count = 1;
         tw.WriteLine("string sql = \"UPDATE {0} SET {1} WHERE [id]=@id\";", type.AfxDbName(), string.Join(", ", parameters));

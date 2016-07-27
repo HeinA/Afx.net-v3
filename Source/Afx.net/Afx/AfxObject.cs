@@ -161,6 +161,7 @@ namespace Afx
       if (string.IsNullOrWhiteSpace(propertyName)) throw new ArgumentException(Properties.Resources.PropertyNameNull, "propertyName");
 
       if (typeof(T).GetTypeInfo().IsValueType && Object.Equals(field, value)) return false;
+      else if (typeof(string).Equals(typeof(T)) && string.Equals(field, value)) return false;
       else if ((object)field == (object)value) return false;
 
       field = value;

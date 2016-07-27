@@ -42,8 +42,9 @@ namespace Afx.Data
       if (mSortedByDataDependencies == null)
       {
         mSortedByDataDependencies = new List<TypeInfo>();
+        int retries = 0;
         Queue<TypeInfo> unsorted = new Queue<TypeInfo>(types.Where(t => t.GetCustomAttribute<PersistentAttribute>(true) != null));
-        while (unsorted.Count > 0)
+        while (unsorted.Count > 0 && retries < unsorted.Count)
         {
           TypeInfo ti = unsorted.Dequeue();
           if (!AreAllDataDependenciesMet(ti, mSortedByDataDependencies)) unsorted.Enqueue(ti);
