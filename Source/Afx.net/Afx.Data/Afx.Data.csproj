@@ -59,6 +59,7 @@
     <Compile Include="DeleteContext.cs" />
     <Compile Include="ICommandProvider.cs" />
     <Compile Include="IDataBuilder.cs" />
+    <Compile Include="IConnectionProvider.cs" />
     <Compile Include="IObjectRepository.cs" />
     <Compile Include="IObjectRepositoryBuilder.cs" />
     <Compile Include="LoadContext.cs" />

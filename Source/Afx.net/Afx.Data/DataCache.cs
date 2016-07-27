@@ -18,8 +18,9 @@ namespace Afx.Data
       Refresh();
     }
 
-    public void Refresh()
+    public override void Refresh()
     {
+      base.Refresh();
       DataScopeCache.RefreshDataCache<T>(this);
     }
 
@@ -43,13 +44,34 @@ namespace Afx.Data
       DataScopeCache = dataScopeCache;
     }
 
-    public DataScopeCache DataScopeCache { get; private set; }
+    Dictionary<Type, List<IAfxObject>> mTypeListDictionary;
+
+    public static IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
+    {
+      return GetDataScopeCache().ForTypes(types);
+    }
+
+    internal void RegisterObject(IAfxObject obj, Type registrationType)
+    {
+      if (!mTypeListDictionary.ContainsKey(registrationType)) mTypeListDictionary.Add(registrationType, new List<IAfxObject>());
+      var list = mTypeListDictionary[registrationType];
+      list.Add(obj);
+    }
+
+    public virtual void Refresh()
+    {
+      mTypeListDictionary = new Dictionary<Type, List<IAfxObject>>();
+    }
+
+    internal DataScopeCache DataScopeCache { get; private set; }
 
     public static void Initialize()
     {
       DataScopeCache dsc = GetDataScopeCache();
       foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
       {
+        if (dsc.GetDataCache(type) != null) continue;
+
         Type type1 = typeof(DataCache<>).MakeGenericType(type);
         ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
         ci.Invoke(new object[] { dsc });
@@ -67,6 +89,14 @@ namespace Afx.Data
         where T : class, IAfxObject
     {
       return (T)GetDataScopeCache().GetObject(id);
+    }
+
+    public static IEnumerable<T> GetObjects<T>()
+    {
+      lock (DataScopeCache.Lock)
+      {
+        return GetDataScopeCache().GetDataCache(typeof(T)).mTypeListDictionary[typeof(T)].Cast<T>();
+      }
     }
 
     public static DataScopeCache GetDataScopeCache()

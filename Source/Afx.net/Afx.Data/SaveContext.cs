@@ -40,5 +40,11 @@ namespace Afx.Data
     {
       get { return mSavedObjects; }
     }
+
+    Collection<IAfxObject> mDeletedObjects = new Collection<IAfxObject>();
+    public Collection<IAfxObject> DeletedObjects
+    {
+      get { return mDeletedObjects; }
+    }
   }
 }

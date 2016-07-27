@@ -42,11 +42,14 @@ namespace TestConsoleApplication
 
           var dc = DataCache<LedgerAccount>.Get();
           dc.DataCacheUpdated += Dc_DataCacheUpdated;
-          dc.Refresh();
+          //dc.Refresh();
+
+          //var o = DataCache.GetObjects<LedgerAccount>().Where(l => l.Owner == null);
+          //Console.ReadKey();
 
           //Document d = ObjectRepository<Document>.Instance().LoadObject(Guid.Parse("7dcb388b-e72c-42d6-b290-89d6eee7bc4b"));
 
-          //ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
+          ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
 
           ////for (int i = 0; i < 10; i++)
           ////{
@@ -66,20 +69,20 @@ namespace TestConsoleApplication
 
           //Stopwatch sw = new Stopwatch();
           //sw.Start();
-          //using (new StateSuppressor())
-          //{
-          //  accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
-          //}
+          using (new StateSuppressor())
+          {
+            accounts = ObjectRepository<LedgerAccount>.Instance().LoadObjects();
+          }
           //Console.WriteLine(sw.ElapsedMilliseconds);
           //sw.Restart();
 
           ////accounts[67].Accounts[57].Name = "aaaa";
           ////accounts[67].Accounts.RemoveAt(57); //.Accounts[57].IsDirty = true;
           ////accounts.RemoveAt(5);
-          //accounts[0].Name = "aaa";
+          //accounts.RemoveAt(0);
 
-          //var sc = new SaveContext();
-          //ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, sc);
+          var sc = new SaveContext();
+          ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts, sc);
           //Console.WriteLine(sw.ElapsedMilliseconds);
           //sw.Restart();
 

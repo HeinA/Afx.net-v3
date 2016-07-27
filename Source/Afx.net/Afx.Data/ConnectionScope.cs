@@ -10,25 +10,36 @@ namespace Afx.Data
   public class ConnectionScope : IDisposable
   {
     public ConnectionScope()
-      : this(DataScope.CurrentScope)
+      : this(DataScope.CurrentScope, false)
     {
     }
 
-    public ConnectionScope(string connectionName)
+    public ConnectionScope(bool forceNew)
+      : this(DataScope.CurrentScope, forceNew)
+    {
+    }
+
+    public ConnectionScope(string connectionName, bool forceNew)
     {
       Guard.ThrowIfNullOrEmpty(connectionName, nameof(connectionName));
 
       ConnectionName = connectionName;
+      Connection = ConnectionStack.FirstOrDefault(cs => cs.ConnectionName == ConnectionName)?.Connection;
+      if (Connection == null || forceNew)
+      {
+        Forced = forceNew;
+        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(ConnectionName);
+        Guard.ThrowIfNull(connectionProvider, nameof(ConnectionName), Properties.Resources.ConnectionStringNotDefined);
+        Connection = connectionProvider.GetConnection();
+        Connection.Open();
+      }
 
-      Connection = Afx.ExtensibilityManager.GetObject<IDbConnection>(ConnectionName);
-      Guard.ThrowIfNull(Connection, nameof(ConnectionName), Properties.Resources.ConnectionStringNotDefined);
-
-      if (Connection.State == ConnectionState.Closed) Connection.Open();
       ConnectionStack.Push(this);
     }
 
     public string ConnectionName { get; private set; }
     public IDbConnection Connection { get; private set; }
+    bool Forced { get; set; }
 
     public IDbCommand GetCommand()
     {
@@ -47,8 +58,11 @@ namespace Afx.Data
 
     public void Dispose()
     {
-      ConnectionStack.Pop();
-      Connection.Close();
+      ConnectionScope cs = ConnectionStack.Pop();
+      if (cs.Forced || !ConnectionStack.Any(cs1 => cs1.ConnectionName == ConnectionName))
+      {
+        Connection.Close();
+      }
     }
 
     public static ConnectionScope CurrentScope

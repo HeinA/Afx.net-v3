@@ -181,6 +181,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("{");
       tw.Indent++;
       tw.WriteLine("RepositoryFor<{0}>().DeleteObject(obj);", itemType.FullName);
+      tw.WriteLine("context.DeletedObjects.Add(obj);");
       tw.Indent--;
       tw.WriteLine("}");
       tw.Indent--;
@@ -206,6 +207,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("{");
       tw.Indent++;
       tw.WriteLine("RepositoryFor<{0}>().DeleteObject(obj);", associativeType.FullName);
+      tw.WriteLine("context.DeletedObjects.Add(obj);");
       tw.Indent--;
       tw.WriteLine("}");
       tw.Indent--;

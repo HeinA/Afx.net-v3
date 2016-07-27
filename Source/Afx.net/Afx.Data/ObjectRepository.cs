@@ -67,6 +67,11 @@ namespace Afx.Data
     public void SaveObject(T target, SaveContext context)
     {
       RepositoryInterfaceFor(target.GetType()).SaveObjectCore(target, context);
+
+      foreach (var dc in DataCache.ForTypes(context.SavedObjects.Union(context.DeletedObjects).Select(o => o.GetType()).Distinct()))
+      {
+        dc.Refresh();
+      }
     }
 
     #endregion
@@ -104,8 +109,14 @@ namespace Afx.Data
         //Delete any objects in the Collections's DeletedItems if the context is not a Merge
         foreach (T obj in targets.DeletedItems)
         {
-          DeleteObject(obj);
+          ImplementationRootRepository.DeleteObjectCore(obj);
+          context.DeletedObjects.Add(obj);
         }
+      }
+
+      foreach (var dc in DataCache.ForTypes(context.SavedObjects.Union(context.DeletedObjects).Select(o => o.GetType()).Distinct()))
+      {
+        dc.Refresh();
       }
     }
 
@@ -119,9 +130,14 @@ namespace Afx.Data
     /// <param name="target">The object to delete</param>
     public void DeleteObject(T target)
     {
-      //Call the Delete Method onth root implementation.
+      //Call the Delete Method on the root implementation.
       //Relationships & Triggers should take care of the entire hierarchy 
       ImplementationRootRepository.DeleteObjectCore(target);
+
+      foreach (var dc in DataCache.ForTypes(new Type[] { typeof(T) }))
+      {
+        dc.Refresh();
+      }
     }
 
     #endregion

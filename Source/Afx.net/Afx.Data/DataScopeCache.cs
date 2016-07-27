@@ -9,66 +9,80 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public class DataScopeCache
+  public sealed class DataScopeCache
   {
     internal DataScopeCache()
     {
       DataScope = Afx.Data.DataScope.CurrentScope;
     }
 
-    protected static object mLock = new object();
+    static object mLock = new object();
+    internal static object Lock
+    {
+      get { return mLock; }
+    }
 
     class CachedObject
     {
-      public CachedObject(IAfxObject target, Type ownerType)
+      public CachedObject(IAfxObject target, DataCache dataCache)
       {
         Target = target;
-        OwnerType = ownerType;
+        DataCache = dataCache;
       }
 
       public IAfxObject Target { get; private set; }
-      public Type OwnerType { get; private set; }
+      public DataCache DataCache { get; private set; }
     }
 
     public string DataScope { get; private set; }
 
     Dictionary<Guid, CachedObject> mObjectDictionary = new Dictionary<Guid, CachedObject>();
-    Dictionary<Type, List<CachedObject>> mTypeListDictionary = new Dictionary<Type, List<CachedObject>>();
     Dictionary<Type, DataCache> mDataCacheDictionary = new Dictionary<Type, DataCache>();
 
     public IAfxObject GetObject(Guid id)
     {
-      lock (mLock)
+      lock (Lock)
       {
         if (mObjectDictionary.ContainsKey(id)) return mObjectDictionary[id].Target;
         else throw new InvalidOperationException();
       }
     }
 
-    internal void ProcessObject(IAfxObject obj)
+    internal void ProcessObject(IAfxObject obj, DataCache dataCache)
     {
-      ProcessObject(obj, obj.GetType());
-    }
-
-    void ProcessObject(IAfxObject obj, Type ownerType)
-    {
-      if (mObjectDictionary.ContainsKey(obj.Id)) throw new InvalidOperationException();
-      mObjectDictionary.Add(obj.Id, new CachedObject(obj, ownerType));
-
-      //if (!mDataCacheDictionary.ContainsKey(typeof(T))) mDataCacheDictionary.Add(typeof(T), dataCache);
+      AddObject(obj, dataCache);
 
       foreach (var pi in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<DataCacheAttribute>() != null && pi1.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)) != null))
       {
         foreach (IAfxObject o in (IEnumerable)pi.GetValue(obj))
         {
-          ProcessObject(o, ownerType);
+          ProcessObject(o, dataCache);
         }
       }
     }
 
-    internal void ClearCache(Type ownerType)
+    internal IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
     {
-      foreach (var ct in mObjectDictionary.Values.Where(ct1 => ct1.OwnerType == ownerType).ToArray())
+      return types.Select(t => mDataCacheDictionary[t]).Distinct();
+    }
+
+    void AddObject(IAfxObject obj, DataCache dataCache)
+    {
+      if (mObjectDictionary.ContainsKey(obj.Id)) throw new InvalidOperationException();
+      mObjectDictionary.Add(obj.Id, new CachedObject(obj, dataCache));
+      Type current = obj.GetType();
+
+      while (current.GetCustomAttribute<AfxBaseTypeAttribute>() == null)
+      {
+        if (!mDataCacheDictionary.ContainsKey(current)) mDataCacheDictionary.Add(current, dataCache);
+        dataCache.RegisterObject(obj, current);
+        current = current.BaseType;
+      }
+    }
+
+    internal void ClearCache(DataCache dataCache)
+    {
+      foreach (var ct in mObjectDictionary.Values.Where(ct1 => ct1.DataCache == dataCache).ToArray())
       {
         mObjectDictionary.Remove(ct.Target.Id);
       }
@@ -76,6 +90,7 @@ namespace Afx.Data
 
     internal DataCache GetDataCache(Type type)
     {
+      if (!mDataCacheDictionary.ContainsKey(type)) return null;
       return mDataCacheDictionary[type];
     }
 
@@ -88,12 +103,12 @@ namespace Afx.Data
         objects = ObjectRepository<T>.Instance().LoadObjects();
       }
 
-      lock (mLock)
+      lock (Lock)
       {
-        ClearCache(typeof(T));
+        ClearCache(dataCache);
         foreach (var obj in objects)
         {
-          ProcessObject(obj);
+          ProcessObject(obj, dataCache);
         }
       }
 

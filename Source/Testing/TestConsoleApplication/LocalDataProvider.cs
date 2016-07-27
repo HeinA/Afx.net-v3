@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace TestConsoleApplication
 {
-  public static class LocalDataProvider
+  [Export(ConnectionName, typeof(IConnectionProvider))]
+  public class LocalDataProvider : IConnectionProvider
   {
     public const string ConnectionName = "Local";
 
-    [Export(ConnectionName, typeof(IDbConnection))]
-    static SqlConnection LocalConnection
+    public IDbConnection GetConnection()
     {
-      get { return new SqlConnection(ConfigurationManager.ConnectionStrings[ConnectionName].ConnectionString); }
+      return new SqlConnection(ConfigurationManager.ConnectionStrings[ConnectionName].ConnectionString);
     }
   }
 }
