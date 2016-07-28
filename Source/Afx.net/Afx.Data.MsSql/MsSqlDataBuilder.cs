@@ -29,7 +29,7 @@ namespace Afx.Data.MsSql
 
       try
       {
-        Log.Info("Database Validation Starting");
+        Log.Info("Validating Database");
 
         List<TypeInfo> types = IdentifyPesistentTypes();
         ValidateSchemas(types);
@@ -37,8 +37,6 @@ namespace Afx.Data.MsSql
         ValidateTableStubs(types);
         ValidateTableProperties(types);
         WriteDeleteTriggers(types);
-
-        Log.Info("Database Validation Completed");
       }
       catch (Exception ex)
       {
@@ -77,13 +75,12 @@ namespace Afx.Data.MsSql
     {
       List<TypeInfo> types = new List<TypeInfo>();
 
-      Log.Info("Pesistent Type Identification Starting");
+      Log.Info("Identifying Pesistent Types");
       foreach (var bot in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
       {
-        Log.InfoFormat("{{{0}}}", bot.AfxTypeName());
+        Log.InfoFormat("Identified {{{0}}}", bot.AfxTypeName());
         types.Add(bot);
       }
-      Log.Info("Pesistent Type Identification Completed");
 
       return types;
     }
@@ -110,7 +107,7 @@ namespace Afx.Data.MsSql
 
     void ValidateSchemas(List<TypeInfo> types)
     {
-      Log.Info("Schema Validation Starting");
+      Log.Info("Validating Schemas");
 
       List<string> schemas = new List<string>();
       schemas.Add("Afx");
@@ -129,8 +126,6 @@ namespace Afx.Data.MsSql
           cmd.ExecuteNonQuery();
         }
       }
-
-      Log.Info("Schema Validation Completed");
     }
 
     #endregion
@@ -176,7 +171,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTableStubs(List<TypeInfo> types)
     {
-      Log.Info("Table Validation Starting");
+      Log.Info("Validating Tables");
 
       foreach (var t in types)
       {
@@ -241,8 +236,6 @@ namespace Afx.Data.MsSql
           }
         }
       }
-
-      Log.Info("Table Validation Completed");
     }
 
     #endregion
@@ -251,7 +244,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTableProperties(List<TypeInfo> types)
     {
-      Log.Info("Property Validation Starting");
+      Log.Info("Validating Columns");
 
       foreach (var t in types)
       {
@@ -307,8 +300,6 @@ namespace Afx.Data.MsSql
 
         #endregion
       }
-
-      Log.Info("Property Validation Completed");
     }
 
     #region DropColumn()

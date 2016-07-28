@@ -18,6 +18,10 @@ namespace Afx.Data
       builder.ValidateDataStructure();
     }
 
+    public static void BuildAndLoadRepositoriesInMemory()
+    {
+    }
+
     public static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       System.Data.DataSet ds = new System.Data.DataSet();

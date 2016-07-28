@@ -9,6 +9,9 @@ namespace Afx.Data
 {
   public interface IObjectRepositoryBuilder
   {
-    IObjectRepository BuildRepository(Type type);
+    Assembly BuildRepository(Type type, bool debug, bool inMemory);
+    string GetAssemblyName(Type type);
+    string GetRepositoryTypeName(Type type);
+    string GetRepositoryTypeFullName(Type type);
   }
 }

@@ -132,6 +132,9 @@
   <data name="NoDataScope" xml:space="preserve">
     <value>No data scope defined.</value>
   </data>
+  <data name="NoRepositoriesLoadedForConnectionType" xml:space="preserve">
+    <value>No Repositories have heen loaded for the connection of type '{0}'</value>
+  </data>
   <data name="NoSuchConnectionScope" xml:space="preserve">
     <value>No such connection scope.</value>
   </data>

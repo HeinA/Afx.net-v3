@@ -12,6 +12,8 @@ namespace Afx.Data
   public sealed class DataCache<T> : DataCache
     where T : class, IAfxObject
   {
+    static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
     internal DataCache(DataScopeCache dataScopeCache)
       : base(dataScopeCache)
     {
@@ -20,8 +22,26 @@ namespace Afx.Data
 
     public override void Refresh()
     {
+      Log.InfoFormat("Refreshing Cache for {0}", typeof(T).FullName);
+
       base.Refresh();
-      DataScopeCache.RefreshDataCache<T>(this);
+
+      ObjectCollection<T> objects = null;
+      using (new ConnectionScope())
+      {
+        objects = ObjectRepository<T>.Instance().LoadObjects();
+      }
+
+      lock (DataScopeCache.Lock)
+      {
+        DataScopeCache.ClearCache(this);
+        foreach (var obj in objects)
+        {
+          DataScopeCache.ProcessObject(obj, this);
+        }
+      }
+
+      OnDataCacheUpdated();
     }
 
     internal void OnDataCacheUpdated()
@@ -39,7 +59,7 @@ namespace Afx.Data
 
   public abstract class DataCache
   {
-    protected DataCache(DataScopeCache dataScopeCache)
+    internal DataCache(DataScopeCache dataScopeCache)
     {
       DataScopeCache = dataScopeCache;
     }
@@ -48,7 +68,7 @@ namespace Afx.Data
 
     public static IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
     {
-      return GetDataScopeCache().ForTypes(types);
+      return GetDataScopeCache().DataCachesForTypes(types);
     }
 
     internal void RegisterObject(IAfxObject obj, Type registrationType)
@@ -65,16 +85,23 @@ namespace Afx.Data
 
     internal DataScopeCache DataScopeCache { get; private set; }
 
-    public static void Initialize()
+    public static void InitializeForDataScope()
     {
       DataScopeCache dsc = GetDataScopeCache();
       foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
       {
         if (dsc.GetDataCache(type) != null) continue;
 
-        Type type1 = typeof(DataCache<>).MakeGenericType(type);
-        ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
-        ci.Invoke(new object[] { dsc });
+        try
+        {
+          Type type1 = typeof(DataCache<>).MakeGenericType(type);
+          ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
+          ci.Invoke(new object[] { dsc });
+        }
+        catch (TargetInvocationException ex)
+        {
+          throw ex.InnerException;
+        }
       }
     }
 
@@ -99,7 +126,7 @@ namespace Afx.Data
       }
     }
 
-    public static DataScopeCache GetDataScopeCache()
+    internal static DataScopeCache GetDataScopeCache()
     {
       DataScopeCache dsc = null;
       if (!mScopeDictionary.ContainsKey(DataScope.CurrentScope))

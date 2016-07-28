@@ -17,7 +17,7 @@ namespace Afx.Data.MsSql
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-    public IObjectRepository BuildRepository(Type type)
+    public Assembly BuildRepository(Type type, bool debug, bool inMemory)
     {
       using (StringWriter sw = new StringWriter())
       using (IndentedTextWriter tw = new IndentedTextWriter(sw, "  "))
@@ -26,7 +26,7 @@ namespace Afx.Data.MsSql
         tw.WriteLine("namespace Afx.Data.MsSql.Generated\r\n{");
         tw.Indent++;
         tw.WriteLine("[System.ComponentModel.Composition.Export(typeof(ObjectRepository<{0}>))]", type.FullName);
-        tw.WriteLine("public class MsSql{0}Repository : Afx.Data.MsSql.MsSqlObjectRepository<{1}>", type.Name, type.FullName);
+        tw.WriteLine("public class {0} : Afx.Data.MsSql.MsSqlObjectRepository<{1}>", GetRepositoryTypeName(type), type.FullName);
         tw.WriteLine("{");
         tw.Indent++;
 
@@ -86,32 +86,59 @@ namespace Afx.Data.MsSql
 
         foreach (var ta in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().DistinctBy(ti => ti.Assembly).Select(ti => ti.Assembly))
         {
-          cp.ReferencedAssemblies.Add(ta.GetName().Name + ".dll"); 
+          cp.ReferencedAssemblies.Add(ta.GetName().Name + ".dll");
         }
 
-#if DEBUGGENERATED
-        cp.GenerateInMemory = false;
-        cp.IncludeDebugInformation = true;
-        Directory.CreateDirectory(string.Format(@".\{0}", ConnectionScope.CurrentScope.ConnectionName));
-        cp.OutputAssembly = string.Format(@".\{1}\{0}.Repository.dll", type.Name, ConnectionScope.CurrentScope.ConnectionName);
-        string csFilename = string.Format(@".\{1}\{0}.Repository.cs", type.Name, ConnectionScope.CurrentScope.ConnectionName);
-        File.WriteAllText(csFilename, code);
-        CompilerResults results = cs.CompileAssemblyFromFile(cp, csFilename);
-#else
-        cp.GenerateInMemory = true;
-        cp.IncludeDebugInformation = false;
-        CompilerResults results = cs.CompileAssemblyFromSource(cp, code);
-#endif
-
+        CompilerResults results = null;
+        cp.GenerateInMemory = inMemory;
+        cp.IncludeDebugInformation = debug;
+        if (!inMemory)
+        {
+          Directory.CreateDirectory(string.Format(@".\{0}", ConnectionScope.CurrentScope.Connection.GetType().FullName));
+          cp.OutputAssembly = GetAssemblyName(type);
+          if (debug)
+          {
+            string csFilename = GetCodeFileName(type);
+            File.WriteAllText(csFilename, code);
+            results = cs.CompileAssemblyFromFile(cp, csFilename);
+          }
+          else
+          {
+            results = cs.CompileAssemblyFromSource(cp, code);
+          }
+        }
+        else
+        {
+          results = cs.CompileAssemblyFromSource(cp, code);
+        }
 
         if (results.Errors.Count != 0)
         {
           throw new InvalidOperationException();
         }
 
-        var a = results.CompiledAssembly;
-        return (IObjectRepository)a.CreateInstance(string.Format("Afx.Data.MsSql.Generated.MsSql{0}Repository", type.Name));
+        return results.CompiledAssembly;
       }
+    }
+
+    public string GetAssemblyName(Type type)
+    {
+      return string.Format(@".\{1}\{0}.Repository.dll", type.FullName, ConnectionScope.CurrentScope.Connection.GetType().FullName);
+    }
+
+    public string GetCodeFileName(Type type)
+    {
+      return string.Format(@".\{1}\{0}.Repository.cs", type.FullName, ConnectionScope.CurrentScope.Connection.GetType().FullName);
+    }
+
+    public string GetRepositoryTypeName(Type type)
+    {
+      return string.Format("MsSql{0}Repository", type.Name);
+    }
+
+    public string GetRepositoryTypeFullName(Type type)
+    {
+      return string.Format("Afx.Data.MsSql.Generated.MsSql{0}Repository", type.Name);
     }
 
     private void WriteSaveObjectCore(IndentedTextWriter tw, Type type)

@@ -19,8 +19,11 @@ namespace Afx.Data
 
     public T LoadObject(Guid id)
     {
-      LoadContext context = new LoadContext() { Target = id }; 
-      return (T)ImplementationRootRepository.LoadObjectCore(context);
+      using (new StateSuppressor())
+      {
+        LoadContext context = new LoadContext() { Target = id };
+        return (T)ImplementationRootRepository.LoadObjectCore(context);
+      }
     }
 
     #endregion
@@ -34,8 +37,11 @@ namespace Afx.Data
 
     public ObjectCollection<T> LoadObjects(Guid owner)
     {
-      LoadContext context = new LoadContext() { Target = owner };
-      return LoadObjectsInner(context, ImplementationRootRepository);
+      using (new StateSuppressor())
+      {
+        LoadContext context = new LoadContext() { Target = owner };
+        return LoadObjectsInner(context, ImplementationRootRepository);
+      }
     }
 
     ObjectCollection<T> LoadObjectsInner(LoadContext context, IObjectRepository repo)
@@ -229,37 +235,12 @@ namespace Afx.Data
 
   public class ObjectRepository
   {
-    static ObjectRepository()
-    {
-    }
-
     static Dictionary<string, Dictionary<Type, IObjectRepository>> mConnectionTypeNameRepositoryDictionary = new Dictionary<string, Dictionary<Type, IObjectRepository>>();
 
     static IObjectRepository GetObject(Type type)
     {
-      Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
-
-      string connectionName = ConnectionScope.CurrentScope.ConnectionName;
-      string connectionTypeName = ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName();
-
-      if (!mConnectionTypeNameRepositoryDictionary.ContainsKey(connectionName))
-      {
-        Dictionary<Type, IObjectRepository> dict = new Dictionary<Type, IObjectRepository>();
-        var orb = Afx.ExtensibilityManager.GetObject<IObjectRepositoryBuilder>(connectionTypeName);
-        foreach (var type1 in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
-        {
-          dict.Add(type1, orb.BuildRepository(type1));
-        }
-        mConnectionTypeNameRepositoryDictionary.Add(connectionName, dict);
-      }
-      else
-      {
-      }
-
-      var repositoryDictionary = mConnectionTypeNameRepositoryDictionary[connectionName];
-      return repositoryDictionary[type];
+      return RepositoryBuilder.GetRepository(type);
     }
-
 
     protected static ObjectRepository<T> RepositoryFor<T>()
       where T : class, IAfxObject

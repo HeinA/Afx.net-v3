@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public sealed class DataScopeCache
+  internal sealed class DataScopeCache
   {
     internal DataScopeCache()
     {
@@ -34,12 +34,12 @@ namespace Afx.Data
       public DataCache DataCache { get; private set; }
     }
 
-    public string DataScope { get; private set; }
+    internal string DataScope { get; private set; }
 
     Dictionary<Guid, CachedObject> mObjectDictionary = new Dictionary<Guid, CachedObject>();
     Dictionary<Type, DataCache> mDataCacheDictionary = new Dictionary<Type, DataCache>();
 
-    public IAfxObject GetObject(Guid id)
+    internal IAfxObject GetObject(Guid id)
     {
       lock (Lock)
       {
@@ -59,11 +59,6 @@ namespace Afx.Data
           ProcessObject(o, dataCache);
         }
       }
-    }
-
-    internal IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
-    {
-      return types.Select(t => mDataCacheDictionary[t]).Distinct();
     }
 
     void AddObject(IAfxObject obj, DataCache dataCache)
@@ -88,31 +83,15 @@ namespace Afx.Data
       }
     }
 
+    internal IEnumerable<DataCache> DataCachesForTypes(IEnumerable<Type> types)
+    {
+      return types.Select(t => mDataCacheDictionary[t]).Distinct();
+    }
+
     internal DataCache GetDataCache(Type type)
     {
       if (!mDataCacheDictionary.ContainsKey(type)) return null;
       return mDataCacheDictionary[type];
-    }
-
-    internal void RefreshDataCache<T>(DataCache<T> dataCache)
-      where T : class, IAfxObject
-    {
-      ObjectCollection<T> objects = null;
-      using (new ConnectionScope())
-      {
-        objects = ObjectRepository<T>.Instance().LoadObjects();
-      }
-
-      lock (Lock)
-      {
-        ClearCache(dataCache);
-        foreach (var obj in objects)
-        {
-          ProcessObject(obj, dataCache);
-        }
-      }
-
-      dataCache.OnDataCacheUpdated();
     }
   }
 }

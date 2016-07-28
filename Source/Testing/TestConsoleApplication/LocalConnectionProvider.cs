@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace TestConsoleApplication
 {
   [Export(ConnectionName, typeof(IConnectionProvider))]
-  public class LocalDataProvider : IConnectionProvider
+  public class LocalConnectionProvider : IConnectionProvider
   {
     public const string ConnectionName = "Local";
 

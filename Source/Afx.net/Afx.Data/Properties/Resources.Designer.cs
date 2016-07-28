@@ -106,6 +106,15 @@ namespace Afx.Data.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No Repositories have heen loaded for the connection of type &apos;{0}&apos;.
+        /// </summary>
+        public static string NoRepositoriesLoadedForConnectionType {
+            get {
+                return ResourceManager.GetString("NoRepositoriesLoadedForConnectionType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No such connection scope..
         /// </summary>
         public static string NoSuchConnectionScope {
