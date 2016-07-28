@@ -12,8 +12,8 @@ namespace Afx.Data
     public DataScope(string dataScopeName)
     {
       Guard.ThrowIfNullOrEmpty(dataScopeName, nameof(dataScopeName));
-
-      ScopeStack.Push(dataScopeName);
+      ScopeName = dataScopeName;
+      ScopeStack.Push(this);
     }
 
     public void Dispose()
@@ -21,18 +21,48 @@ namespace Afx.Data
       if (ScopeStack.Count > 0) ScopeStack.Pop();
     }
 
-    public static string DefaultScope { get; set; }
+    public string ScopeName { get; private set; }
 
-    [ThreadStatic]
-    static Stack<string> mScopeStack;
-    static Stack<string> ScopeStack
+    //public void InitializeCache()
+    //{
+    //  DataCache.InitializeForDataScope();
+    //}
+
+    public static DataScope DefaultScope { get; private set; }
+
+    public void BuildAndLoadRepositoriesInMemory()
     {
-      get { return mScopeStack ?? (mScopeStack = new Stack<string>()); }
+      RepositoryBuilder.GetForDataScope().BuildAndLoadRepositoriesInMemory();
+    }
+    public void LoadRepositories()
+    {
+      RepositoryBuilder.GetForDataScope().LoadRepositories();
+    }
+    public void BuildRepositories(bool debug)
+    {
+      RepositoryBuilder.GetForDataScope().BuildRepositories(debug);
     }
 
-    public static string CurrentScope
+    public static void SetDefaultScope(string dataScopeName)
     {
-      get { return ScopeStack.Count == 0 ? DefaultScope  : ScopeStack.Peek(); }
+      DefaultScope = new DataScope(dataScopeName);
+    }
+
+    [ThreadStatic]
+    static Stack<DataScope> mScopeStack;
+    static Stack<DataScope> ScopeStack
+    {
+      get { return mScopeStack ?? (mScopeStack = new Stack<DataScope>()); }
+    }
+
+    public static string CurrentScopeName
+    {
+      get { return ScopeStack.Count == 0 ? DefaultScope?.ScopeName  : ScopeStack.Peek().ScopeName; }
+    }
+
+    public static DataScope CurrentScope
+    {
+      get { return ScopeStack.Count == 0 ? DefaultScope : ScopeStack.Peek(); }
     }
 
     static Dictionary<string, DataCache> mDataCacheDictionary = new Dictionary<string, DataCache>();

@@ -22,13 +22,14 @@ namespace Afx.Data.MsSql
 
     protected override bool IsNew(Guid id)
     {
-      string sql = string.Format("SELECT CAST(COUNT(1) as bit) FROM {0} WHERE id=@id", typeof(T).AfxDbName());
+      string sql = string.Format("SELECT COUNT(1) FROM {0} WHERE id=@id", typeof(T).AfxDbName());
       Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
       {
         cmd.Parameters.AddWithValue("@id", id);
-        bool isNew = !(bool)cmd.ExecuteScalar();
+        int i = (int)cmd.ExecuteScalar();
+        bool isNew = i == 0;
         return isNew;
       }
     }

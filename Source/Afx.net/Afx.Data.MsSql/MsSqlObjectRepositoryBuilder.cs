@@ -17,6 +17,15 @@ namespace Afx.Data.MsSql
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+    string ConnectionTypeName
+    {
+      get
+      {
+        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(DataScope.CurrentScopeName);
+        return connectionProvider.GetConnection().GetType().FullName;
+      }
+    }
+
     public Assembly BuildRepository(Type type, bool debug, bool inMemory)
     {
       using (StringWriter sw = new StringWriter())
@@ -94,7 +103,7 @@ namespace Afx.Data.MsSql
         cp.IncludeDebugInformation = debug;
         if (!inMemory)
         {
-          Directory.CreateDirectory(string.Format(@".\{0}", ConnectionScope.CurrentScope.Connection.GetType().FullName));
+          Directory.CreateDirectory(string.Format(@".\{0}", ConnectionTypeName));
           cp.OutputAssembly = GetAssemblyName(type);
           if (debug)
           {
@@ -114,7 +123,7 @@ namespace Afx.Data.MsSql
 
         if (results.Errors.Count != 0)
         {
-          throw new InvalidOperationException();
+          throw new InvalidOperationException(Properties.Resources.RepositoryCompilationErrors);
         }
 
         return results.CompiledAssembly;
@@ -123,12 +132,12 @@ namespace Afx.Data.MsSql
 
     public string GetAssemblyName(Type type)
     {
-      return string.Format(@".\{1}\{0}.Repository.dll", type.FullName, ConnectionScope.CurrentScope.Connection.GetType().FullName);
+      return string.Format(@".\{1}\{0}.Repository.dll", type.FullName, ConnectionTypeName);
     }
 
     public string GetCodeFileName(Type type)
     {
-      return string.Format(@".\{1}\{0}.Repository.cs", type.FullName, ConnectionScope.CurrentScope.Connection.GetType().FullName);
+      return string.Format(@".\{1}\{0}.Repository.cs", type.FullName, ConnectionTypeName);
     }
 
     public string GetRepositoryTypeName(Type type)
@@ -283,19 +292,21 @@ namespace Afx.Data.MsSql
     {
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
+      Type afxImplementationRoot = type.GetAfxImplementationRoot();
 
       tw.Write("string sql = \"INSERT INTO {0} (", type.AfxDbName(), type.AfxDbName());
       tw.Write(string.Join(", ", GetWriteColumns(type, true)));
       tw.Write(") SELECT ");
       tw.Write(string.Join(", ", GetWriteValues(type, true)));
-      tw.WriteLine(" FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@assemblyFullName\";");
+      if (type == afxImplementationRoot) tw.WriteLine(" FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@assemblyFullName\";");
+      else tw.WriteLine("\";");
       tw.WriteLine("Log.Debug(sql);");
       tw.WriteLine();
       tw.WriteLine("using (System.Data.SqlClient.SqlCommand cmd = GetCommand(sql))");
       tw.WriteLine("{");
       tw.Indent++;
       tw.WriteLine("cmd.Parameters.AddWithValue(\"@id\", target.Id);");
-      tw.WriteLine("cmd.Parameters.AddWithValue(\"@assemblyFullName\", target.GetType().AfxTypeName());");
+      if (type == afxImplementationRoot) tw.WriteLine("cmd.Parameters.AddWithValue(\"@assemblyFullName\", target.GetType().AfxTypeName());");
       if (associativeType != null)
       {
         tw.WriteLine("cmd.Parameters.AddWithValue(\"@owner\", target.Owner != null ? (object)target.Owner.Id : (object)System.DBNull.Value);");
@@ -325,7 +336,7 @@ namespace Afx.Data.MsSql
           //{
           //  continue;
           //}
-          WriteParameter(tw, pi, count);
+          WriteParameter(tw, pi, count++);
         }
       }
       else
@@ -335,7 +346,7 @@ namespace Afx.Data.MsSql
         {
           foreach (var pi in current.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
           {
-            WriteParameter(tw, pi, count);
+            WriteParameter(tw, pi, count++);
           }
           current = current.BaseType;
         }
@@ -370,7 +381,7 @@ namespace Afx.Data.MsSql
         }
         else
         {
-          tw.WriteLine("cmd.Parameters.AddWithValue(\"@P_{0}\", ((object)target.{1}) == null ? (object)System.DBNull.Value : target.{1});", count++, pi.Name);
+          tw.WriteLine("cmd.Parameters.AddWithValue(\"@P_{0}\", ((object)target.{1}) == null ? (object)System.DBNull.Value : target.{1}.Id);", count++, pi.Name);
         }
       }
     }
@@ -411,13 +422,14 @@ namespace Afx.Data.MsSql
       else
       {
         Type current = type;
-        while (current != afxImplementationRoot)
+        //while (current != afxImplementationRoot)
         {
+          yield return "[id]";
           foreach (var pi in current.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
           {
             yield return string.Format("[{0}]", pi.Name);
           }
-          current = current.BaseType;
+          //current = current.BaseType;
         }
       }
     }
@@ -459,13 +471,14 @@ namespace Afx.Data.MsSql
       else
       {
         Type current = type;
-        while (current != afxImplementationRoot)
+        //while (current != afxImplementationRoot)
         {
+          yield return "@id";
           foreach (var pi in current.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
           {
             yield return string.Format("@P_{0}", count++);
           }
-          current = current.BaseType;
+          //current = current.BaseType;
         }
       }
     }
@@ -579,7 +592,7 @@ namespace Afx.Data.MsSql
         }
         else
         {
-          //TODO: Load from cache if available
+          tw.WriteLine(string.Format("if (dr[\"Reference\"] != System.DBNull.Value) target.Reference = DataCache.GetObject<{0}>((System.Guid)dr[\"Reference\"]);", pi.PropertyType.FullName));
         }
       }
     }
@@ -594,11 +607,13 @@ namespace Afx.Data.MsSql
         }
         else
         {
-          //Is an Afx Object Reference
-
-          //Check if object is in context (Previously loaded owned collection)
-
-          //Otherwise, Load from cache if availabe
+          tw.WriteLine("if (dr[\"{0}\"] != System.DBNull.Value)", pi.Name, pi.PropertyType.FullName);
+          tw.WriteLine("{");
+          tw.Indent++;
+          tw.WriteLine("target.{0} = ({1})context.GetObject((System.Guid)dr[\"{0}\"]);", pi.Name, pi.PropertyType.FullName);
+          tw.WriteLine("if (target.{0} == null) target.{0} = DataCache.GetObject<{1}>((System.Guid)dr[\"{0}\"]);", pi.Name, pi.PropertyType.FullName);
+          tw.Indent--;
+          tw.WriteLine("}");
         }
       }
     }

@@ -24,6 +24,7 @@ namespace Afx.Data
 
     public IAfxObject GetObject(Guid id)
     {
+      if (!mObjectDictionary.ContainsKey(id)) return null;
       return mObjectDictionary[id];
     }
   }

@@ -35,28 +35,29 @@ namespace TestConsoleApplication
         }
       }
 
-      ObjectRepository<LedgerAccount>.Instance().SaveObjects(accounts);
+      ObjectRepository<LedgerAccount>.Get().SaveObjects(accounts);
     }
 
 
     static void Main(string[] args)
     {
-      DataScope.DefaultScope = LocalConnectionProvider.ConnectionName;
+      DataScope.SetDefaultScope(LocalConnectionProvider.ConnectionName);
 
       using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
       using (new ConnectionScope())
       {
         DataBuilder.DoDataStructureValidation();
-        //RepositoryBuilder.GetForConnectionType().BuildRepositories(true);
-        //RepositoryBuilder.GetForConnectionType().LoadRepositories();
-        RepositoryBuilder.GetForConnectionType().BuildAndLoadRepositoriesInMemory();
-
         ts.Complete();
       }
 
-      DataCache.InitializeForDataScope();
+      //DataScope.CurrentScope.BuildRepositories(true);
+      //DataScope.CurrentScope.LoadRepositories();
 
-      DataCache<LedgerAccount>.Get().DataCacheUpdated += LedgerAccount_DataCacheUpdated;
+      DataScope.CurrentScope.BuildAndLoadRepositoriesInMemory();
+
+      var dc = DataCache<LedgerAccount>.Get();
+      dc.DataCacheUpdated += LedgerAccount_DataCacheUpdated;
+
 
       //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
       //using (new ConnectionScope())
@@ -65,8 +66,22 @@ namespace TestConsoleApplication
       //  ts.Complete();
       //}
 
-      var ong = DataCache.GetObject(Guid.Parse("{cb56a582-7ec5-452d-a72f-bdfd91900a13}"));
+      var ong = DataCache.GetObject<LedgerAccount>(Guid.Parse("{cb56a582-7ec5-452d-a72f-bdfd91900a13}"));
 
+      using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
+      using (new ConnectionScope())
+      {
+        Guid id = Guid.Parse("{E90A63F6-ED19-4523-A282-AB325F185971}");
+        PurchaseOrder po = ObjectRepository<PurchaseOrder>.Get().LoadObject(id);
+        //PurchaseOrder po = new PurchaseOrder() { Id = id, CustomerName = "Piet", DocumentDate = DateTime.Now, DocumentNumber = "PO0002", SourceAccount = ong };
+        //ObjectRepository<PurchaseOrder>.Get().SaveObject(po);
+        ts.Complete();
+      }
+
+      //using (new ConnectionScope())
+      //{
+      //  ObjectRepository<LedgerAccount>.Get().DeleteObject(ong.Accounts[0]);
+      //}
 
       Console.WriteLine("Waiting...");
       Console.ReadKey();

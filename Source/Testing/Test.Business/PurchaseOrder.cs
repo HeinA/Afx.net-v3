@@ -38,6 +38,18 @@ namespace Test.Business
 
     #endregion
 
+    #region LedgerAccount SourceAccount
+
+    public const string SourceAccountProperty = "SourceAccount";
+    LedgerAccount mSourceAccount;
+    [Persistent]
+    public LedgerAccount SourceAccount
+    {
+      get { return mSourceAccount; }
+      set { SetProperty<LedgerAccount>(ref mSourceAccount, value); }
+    }
+
+    #endregion
 
     AssociativeCollection<InventoryItem, PurchaseOrderItem> mItems;
     public AssociativeCollection<InventoryItem, PurchaseOrderItem> Items { get { return this.GetAssociativeCollection<InventoryItem, PurchaseOrderItem>(ref mItems); } }

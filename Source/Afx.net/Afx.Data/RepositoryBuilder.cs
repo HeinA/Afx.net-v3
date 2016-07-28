@@ -11,11 +11,10 @@ namespace Afx.Data
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-    public RepositoryBuilder()
+    public RepositoryBuilder(string connectionTypeName)
     {
-      Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
-      string connectionName = ConnectionScope.CurrentScope.ConnectionName;
-      string connectionTypeName = ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName();
+      Guard.ThrowOperationExceptionIfNull(DataScope.CurrentScopeName, Properties.Resources.NoDataScope);
+      string connectionName = DataScope.CurrentScopeName;
       ConnectionTypeName = connectionTypeName;
 
       if (mRepositorySourceDictionary.ContainsKey(connectionName)) throw new InvalidOperationException(String.Format(Properties.Resources.NoRepositoriesLoadedForConnectionType, connectionTypeName)); 
@@ -67,19 +66,21 @@ namespace Afx.Data
 
     public static IObjectRepository GetRepository(Type type)
     {
-      var rb = GetForConnectionType();
+      var rb = GetForDataScope();
       if (!rb.mRepositoryDictionary.ContainsKey(type)) throw new InvalidProgramException(string.Format(Properties.Resources.TypeRepositoryNotFound, type.AfxTypeName()));
       return rb.mRepositoryDictionary[type];
     }
 
-    public static RepositoryBuilder GetForConnectionType()
+    public static RepositoryBuilder GetForDataScope()
     {
-      Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
-      string connectionName = ConnectionScope.CurrentScope.ConnectionName;
-      string connectionTypeName = ConnectionScope.CurrentScope.Connection.GetType().AfxTypeName();
+      Guard.ThrowOperationExceptionIfNull(DataScope.CurrentScopeName, Properties.Resources.NoDataScope);
+      string connectionName = DataScope.CurrentScopeName;
+      var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(connectionName);
+
+      string connectionTypeName = connectionProvider.GetConnection().GetType().AfxTypeName();
       if (!mRepositorySourceDictionary.ContainsKey(connectionTypeName))
       {
-        mRepositorySourceDictionary.Add(connectionTypeName, new RepositoryBuilder());
+        mRepositorySourceDictionary.Add(connectionTypeName, new RepositoryBuilder(connectionTypeName));
       }
       return mRepositorySourceDictionary[connectionTypeName];
     }

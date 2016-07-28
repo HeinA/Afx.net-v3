@@ -13,7 +13,23 @@ namespace Afx.Data
   {
     internal DataScopeCache()
     {
-      DataScope = Afx.Data.DataScope.CurrentScope;
+      DataScope = Afx.Data.DataScope.CurrentScopeName;
+
+      foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
+      {
+        //if (GetDataCache(type) != null) continue;
+
+        try
+        {
+          Type type1 = typeof(DataCache<>).MakeGenericType(type);
+          ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
+          ci.Invoke(new object[] { this });
+        }
+        catch (TargetInvocationException ex)
+        {
+          throw ex.InnerException;
+        }
+      }
     }
 
     static object mLock = new object();
@@ -52,7 +68,7 @@ namespace Afx.Data
     {
       AddObject(obj, dataCache);
 
-      foreach (var pi in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<DataCacheAttribute>() != null && pi1.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)) != null))
+      foreach (var pi in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<DataCacheAttribute>() != null && pi1.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)) != null && pi1.PropertyType.GetGenericSubClass(typeof(AssociativeCollection<,>)) == null))
       {
         foreach (IAfxObject o in (IEnumerable)pi.GetValue(obj))
         {
@@ -85,7 +101,7 @@ namespace Afx.Data
 
     internal IEnumerable<DataCache> DataCachesForTypes(IEnumerable<Type> types)
     {
-      return types.Select(t => mDataCacheDictionary[t]).Distinct();
+      return types.Where(t => mDataCacheDictionary.ContainsKey(t)).Select(t => mDataCacheDictionary[t]).Distinct();
     }
 
     internal DataCache GetDataCache(Type type)

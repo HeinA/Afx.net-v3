@@ -225,7 +225,7 @@ namespace Afx.Data
 
     #region Statics
 
-    public static ObjectRepository<T> Instance()
+    public static ObjectRepository<T> Get()
     {
       return RepositoryFor<T>();
     }
@@ -233,7 +233,7 @@ namespace Afx.Data
     #endregion
   }
 
-  public class ObjectRepository
+  public abstract class ObjectRepository
   {
     static Dictionary<string, Dictionary<Type, IObjectRepository>> mConnectionTypeNameRepositoryDictionary = new Dictionary<string, Dictionary<Type, IObjectRepository>>();
 

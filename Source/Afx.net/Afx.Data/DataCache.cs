@@ -29,7 +29,7 @@ namespace Afx.Data
       ObjectCollection<T> objects = null;
       using (new ConnectionScope())
       {
-        objects = ObjectRepository<T>.Instance().LoadObjects();
+        objects = ObjectRepository<T>.Get().LoadObjects();
       }
 
       lock (DataScopeCache.Lock)
@@ -66,7 +66,7 @@ namespace Afx.Data
 
     Dictionary<Type, List<IAfxObject>> mTypeListDictionary;
 
-    public static IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
+    internal static IEnumerable<DataCache> ForTypes(IEnumerable<Type> types)
     {
       return GetDataScopeCache().DataCachesForTypes(types);
     }
@@ -85,25 +85,25 @@ namespace Afx.Data
 
     internal DataScopeCache DataScopeCache { get; private set; }
 
-    public static void InitializeForDataScope()
-    {
-      DataScopeCache dsc = GetDataScopeCache();
-      foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
-      {
-        if (dsc.GetDataCache(type) != null) continue;
+    //internal static void InitializeForDataScope()
+    //{
+    //  DataScopeCache dsc = GetDataScopeCache();
+    //  foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
+    //  {
+    //    if (dsc.GetDataCache(type) != null) continue;
 
-        try
-        {
-          Type type1 = typeof(DataCache<>).MakeGenericType(type);
-          ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
-          ci.Invoke(new object[] { dsc });
-        }
-        catch (TargetInvocationException ex)
-        {
-          throw ex.InnerException;
-        }
-      }
-    }
+    //    try
+    //    {
+    //      Type type1 = typeof(DataCache<>).MakeGenericType(type);
+    //      ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
+    //      ci.Invoke(new object[] { dsc });
+    //    }
+    //    catch (TargetInvocationException ex)
+    //    {
+    //      throw ex.InnerException;
+    //    }
+    //  }
+    //}
 
     static Dictionary<string, DataScopeCache> mScopeDictionary = new Dictionary<string, DataScopeCache>();
 
@@ -129,12 +129,12 @@ namespace Afx.Data
     internal static DataScopeCache GetDataScopeCache()
     {
       DataScopeCache dsc = null;
-      if (!mScopeDictionary.ContainsKey(DataScope.CurrentScope))
+      if (!mScopeDictionary.ContainsKey(DataScope.CurrentScopeName))
       {
         dsc = new DataScopeCache();
-        mScopeDictionary.Add(DataScope.CurrentScope, dsc);
+        mScopeDictionary.Add(DataScope.CurrentScopeName, dsc);
       }
-      if (dsc == null) dsc = mScopeDictionary[DataScope.CurrentScope];
+      if (dsc == null) dsc = mScopeDictionary[DataScope.CurrentScopeName];
       return dsc;
     }
   }

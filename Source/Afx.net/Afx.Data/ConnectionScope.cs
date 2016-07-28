@@ -10,12 +10,12 @@ namespace Afx.Data
   public class ConnectionScope : IDisposable
   {
     public ConnectionScope()
-      : this(DataScope.CurrentScope, false)
+      : this(DataScope.CurrentScopeName, false)
     {
     }
 
     public ConnectionScope(bool forceNew)
-      : this(DataScope.CurrentScope, forceNew)
+      : this(DataScope.CurrentScopeName, forceNew)
     {
     }
 
