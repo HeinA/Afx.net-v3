@@ -18,6 +18,15 @@ namespace Afx.Data
       builder.ValidateDataStructure();
     }
 
+    public static void ValidateSystemObjects()
+    {
+      foreach (var obj in Afx.ExtensibilityManager.GetObjects<IAfxObject>())
+      {
+        ObjectRepository.RepositoryInterfaceFor(obj.GetType()).SaveObjectCore(obj, new SaveContext());
+      }
+    }
+
+
     public static void BuildAndLoadRepositoriesInMemory()
     {
     }

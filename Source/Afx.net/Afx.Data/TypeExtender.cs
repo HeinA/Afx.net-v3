@@ -64,6 +64,10 @@ namespace Afx.Data
       {
         if (pi.PropertyType != ti && !processed.Contains(pi.PropertyType.GetTypeInfo())) return false;
       }
+      if (ti.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() == null)
+      {
+        if (!processed.Contains(ti.BaseType.GetTypeInfo())) return false;
+      }
       return true;
     }
   }

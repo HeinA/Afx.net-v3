@@ -60,7 +60,7 @@ namespace Afx.Data.MsSql
 
     protected override void LoadObjectCore(T target, LoadContext context)
     {
-      string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", Columns, TableJoin, typeof(T).AfxDbName());
+      string sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[id]=@id", string.IsNullOrWhiteSpace(Columns) ? "*" : Columns, TableJoin, typeof(T).AfxDbName());
       Log.Debug(sql);
 
       using (SqlCommand cmd = GetCommand(sql))
@@ -88,14 +88,14 @@ namespace Afx.Data.MsSql
       {
         if (OwnerType != typeof(T))
         {
-          if (context.Target == Guid.Empty) sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner] IS NULL", Columns, TableJoin, typeof(T).AfxDbName());
-          else sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner]=@id", Columns, TableJoin, typeof(T).AfxDbName());
+          if (context.Target == Guid.Empty) sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner] IS NULL", string.IsNullOrWhiteSpace(Columns) ? "*" : Columns, TableJoin, typeof(T).AfxDbName());
+          else sql = string.Format("SELECT {0} FROM {1} WHERE {2}.[Owner]=@id", string.IsNullOrWhiteSpace(Columns) ? "*" : Columns, TableJoin, typeof(T).AfxDbName());
         }
         else
         {
           useListDetection = true;
-          if (context.Target == Guid.Empty) sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner] IS NULL UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
-          else sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner]=@id UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", Columns, TableJoin, typeof(T).AfxDbName());
+          if (context.Target == Guid.Empty) sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner] IS NULL UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", string.IsNullOrWhiteSpace(Columns) ? "*" : Columns, TableJoin, typeof(T).AfxDbName());
+          else sql = string.Format("WITH Hierarchy AS (SELECT {0}, 0 AS [Level] FROM {1} WHERE {2}.[Owner]=@id UNION ALL SELECT {0}, [Level] + 1 FROM {1} INNER JOIN [Hierarchy] [H] ON [H].[id] = {2}.[Owner]) SELECT * FROM [Hierarchy] ORDER BY [Level]", string.IsNullOrWhiteSpace(Columns) ? "*" : Columns, TableJoin, typeof(T).AfxDbName());
         }
       }
       Log.Debug(sql);

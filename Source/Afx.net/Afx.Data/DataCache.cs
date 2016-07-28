@@ -34,6 +34,7 @@ namespace Afx.Data
 
       lock (DataScopeCache.Lock)
       {
+        DataScopeCache.RegisterType(typeof(T), this);
         DataScopeCache.ClearCache(this);
         foreach (var obj in objects)
         {

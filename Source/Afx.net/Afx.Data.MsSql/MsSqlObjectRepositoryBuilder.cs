@@ -424,7 +424,7 @@ namespace Afx.Data.MsSql
         Type current = type;
         //while (current != afxImplementationRoot)
         {
-          yield return "[id]";
+          if (forInsert) yield return "[id]";
           foreach (var pi in current.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
           {
             yield return string.Format("[{0}]", pi.Name);

@@ -254,7 +254,7 @@ namespace Afx.Data
       return GetObject(typeof(T));
     }
 
-    protected static IObjectRepository RepositoryInterfaceFor(Type type)
+    protected internal static IObjectRepository RepositoryInterfaceFor(Type type)
     {
       return GetObject(type);
     }

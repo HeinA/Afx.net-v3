@@ -77,6 +77,11 @@ namespace Afx.Data
       }
     }
 
+    internal void RegisterType(Type type, DataCache dataCache)
+    {
+      if (!mDataCacheDictionary.ContainsKey(type)) mDataCacheDictionary.Add(type, dataCache);
+    }
+
     void AddObject(IAfxObject obj, DataCache dataCache)
     {
       if (mObjectDictionary.ContainsKey(obj.Id)) throw new InvalidOperationException();
@@ -85,7 +90,7 @@ namespace Afx.Data
 
       while (current.GetCustomAttribute<AfxBaseTypeAttribute>() == null)
       {
-        if (!mDataCacheDictionary.ContainsKey(current)) mDataCacheDictionary.Add(current, dataCache);
+        RegisterType(current, dataCache);
         dataCache.RegisterObject(obj, current);
         current = current.BaseType;
       }

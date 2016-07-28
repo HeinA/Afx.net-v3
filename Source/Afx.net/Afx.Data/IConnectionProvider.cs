@@ -10,5 +10,6 @@ namespace Afx.Data
   public interface IConnectionProvider
   {
     IDbConnection GetConnection();
+    bool VerifyConnection();
   }
 }

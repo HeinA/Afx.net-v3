@@ -30,6 +30,7 @@ namespace Afx.Data
         Forced = forceNew;
         var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(ConnectionName);
         Guard.ThrowIfNull(connectionProvider, nameof(ConnectionName), Properties.Resources.ConnectionStringNotDefined);
+        connectionProvider.VerifyConnection();
         Connection = connectionProvider.GetConnection();
         Connection.Open();
       }
