@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 namespace Afx.Data.MsSql
 {
   [Export("System.Data.SqlClient.SqlConnection, System.Data", typeof(IDataBuilder))]
-  public class MsSqlDataBuilder : DataBuilder, IDataBuilder
+  public sealed class MsSqlDataBuilder : DataBuilder, IDataBuilder
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -23,6 +24,8 @@ namespace Afx.Data.MsSql
     const string Ix = "ix";
     const string RegisteredType = "RegisteredType";
 
+    List<Type> mCreatedTables = new List<Type>();
+
     public void ValidateDataStructure()
     {
       Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Afx.Data.Properties.Resources.NoConnectionScope);
@@ -31,12 +34,21 @@ namespace Afx.Data.MsSql
       {
         Log.Info("Validating Database");
 
-        List<TypeInfo> types = IdentifyPesistentTypes();
-        ValidateSchemas(types);
-        ValidateRegisteredTypes(types);
-        ValidateTableStubs(types);
-        ValidateTableProperties(types);
-        WriteDeleteTriggers(types);
+        ValidateSchemas();
+        ValidateRegisteredTypes();
+
+        DropConstraints();
+
+        ValidateTables();
+        ValidateTableColumns();
+
+        UpdateTables();
+        UpdateTableColumns();
+
+        WriteDeleteTriggers();
+
+        DropTables();
+        mCreatedTables.Clear();
       }
       catch (Exception ex)
       {
@@ -45,49 +57,25 @@ namespace Afx.Data.MsSql
       }
     }
 
-    #region GetTableInsteadOfDeleteTrigger()
+    #region ActivePesistentTypes
 
-    Dictionary<Type, StringWriter> mTableInsteadOfDeleteTriggers;
-    StringWriter GetTableInsteadOfDeleteTrigger(Type type)
+    IEnumerable<TypeInfo> PesistentTypes
     {
-      if (mTableInsteadOfDeleteTriggers == null) mTableInsteadOfDeleteTriggers = new Dictionary<Type, StringWriter>();
-      if (!mTableInsteadOfDeleteTriggers.ContainsKey(type)) mTableInsteadOfDeleteTriggers.Add(type, new StringWriter());
-      return mTableInsteadOfDeleteTriggers[type];
-    }
-
-    #endregion
-
-    #region GetTableAfterDeleteTrigger()
-
-    Dictionary<Type, StringWriter> mTableAfterDeleteTriggers;
-    StringWriter GetTableAfterDeleteTrigger(Type type)
-    {
-      if (mTableAfterDeleteTriggers == null) mTableAfterDeleteTriggers = new Dictionary<Type, StringWriter>();
-      if (!mTableAfterDeleteTriggers.ContainsKey(type)) mTableAfterDeleteTriggers.Add(type, new StringWriter());
-      return mTableAfterDeleteTriggers[type];
-    }
-
-    #endregion
-
-    #region IdentifyPesistentTypes()
-
-    List<TypeInfo> IdentifyPesistentTypes()
-    {
-      List<TypeInfo> types = new List<TypeInfo>();
-
-      Log.Info("Identifying Pesistent Types");
-      foreach (var bot in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
+      get
       {
-        Log.InfoFormat("Identified {{{0}}}", bot.AfxTypeName());
-        types.Add(bot);
-      }
+        IEnumerable<TypeInfo> types = Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder();
+        if (types.Count() == 0) yield break;
 
-      return types;
+        foreach (var bot in types)
+        {
+          yield return bot;
+        }
+      }
     }
 
     #endregion
 
-    #region GetSchema()
+    #region Schema
 
     public static string GetSchema(Type t)
     {
@@ -101,17 +89,11 @@ namespace Afx.Data.MsSql
       return schema.Replace(" ", string.Empty);
     }
 
-    #endregion
-
-    #region ValidateSchemas()
-
-    void ValidateSchemas(List<TypeInfo> types)
+    void ValidateSchemas()
     {
-      Log.Info("Validating Schemas");
-
       List<string> schemas = new List<string>();
       schemas.Add("Afx");
-      foreach (var a in types.Select(t => t.Assembly).Distinct())
+      foreach (var a in PesistentTypes.Select(t => t.Assembly).Distinct())
       {
         var schema = GetSchema(a);
         if (!schemas.Contains(schema)) schemas.Add(schema);
@@ -119,7 +101,6 @@ namespace Afx.Data.MsSql
 
       foreach (var schema in schemas)
       {
-        Log.InfoFormat("[{0}]", schema);
         string sqlSchema = string.Format("IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{0}') BEGIN EXEC('CREATE SCHEMA [{0}]') END", schema);
         using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sqlSchema))
         {
@@ -130,9 +111,9 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region ValidateRegisteredTypes()
+    #region Registered Types
 
-    void ValidateRegisteredTypes(List<TypeInfo> types)
+    void ValidateRegisteredTypes()
     {
       string sqlTableExists = "SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'Afx' AND  TABLE_NAME = 'RegisteredType'";
       int count = 0;
@@ -143,23 +124,31 @@ namespace Afx.Data.MsSql
 
       if (count == 0)
       {
-        string sql = "CREATE TABLE [Afx].[RegisteredType] ([Id] [int] IDENTITY(1,1) NOT NULL, [FullName] [varchar](300) NOT NULL, CONSTRAINT [PK_CodeType] PRIMARY KEY CLUSTERED ([Id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]) ON [PRIMARY]";
+        string sql = "CREATE TABLE [Afx].[RegisteredType] ([Id] [int] IDENTITY(1,1) NOT NULL, [AssemblyFullName] [varchar](300) NOT NULL, [Schema] [varchar](300) NOT NULL, [TableName] [varchar](300) NOT NULL, CONSTRAINT [PK_RegisteredType] PRIMARY KEY CLUSTERED ([Id] ASC) ON [PRIMARY]) ON [PRIMARY]";
         using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
         {
           cmd.ExecuteNonQuery();
         }
-        sql = "CREATE UNIQUE INDEX [UIX_Afx_RegisteredType_FullName] ON [Afx].[RegisteredType](FullName)";
+        sql = "CREATE TABLE [Afx].[RegisteredConstraints] ([Id] [int] IDENTITY(1,1) NOT NULL, [RegisteredType] [int] NOT NULL, [ConstraintName] [varchar](300) NOT NULL, CONSTRAINT [PK_RegisteredConstraints] PRIMARY KEY CLUSTERED ([RegisteredType] ASC, [Id] ASC) ON [PRIMARY], CONSTRAINT FK_RegisteredConstraints_RegisteredType FOREIGN KEY ([RegisteredType]) REFERENCES [Afx].[RegisteredType] ([id]) ON DELETE CASCADE) ON [PRIMARY]";
+        using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
+        {
+          cmd.ExecuteNonQuery();
+        }
+        sql = "CREATE UNIQUE INDEX [UIX_Afx_RegisteredType_AssemblyFullName] ON [Afx].[RegisteredType](AssemblyFullName)";
         using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
         {
           cmd.ExecuteNonQuery();
         }
       }
 
-      foreach (var t in types.Where(t1 => !t1.IsAbstract))
+      foreach (var t in PesistentTypes)
       {
-        string sql = string.Format("INSERT INTO [Afx].[RegisteredType] ([FullName]) SELECT '{0}' WHERE NOT EXISTS (SELECT 1 FROM [Afx].[RegisteredType] WHERE [FullName]='{0}')", t.AfxTypeName());
-        using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
+        string sql = "INSERT INTO [Afx].[RegisteredType] ([AssemblyFullName], [Schema], [TableName]) SELECT @tn, @sn, @tbl WHERE NOT EXISTS (SELECT 1 FROM [Afx].[RegisteredType] WHERE [AssemblyFullName]=@tn)";
+        using (var cmd = GetCommand(sql))
         {
+          cmd.Parameters.AddWithValue("@tn", t.AfxTypeName());
+          cmd.Parameters.AddWithValue("@sn", GetSchema(t));
+          cmd.Parameters.AddWithValue("@tbl", t.Name);
           cmd.ExecuteNonQuery();
         }
       }
@@ -167,16 +156,14 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region ValidateTableStubs()
+    #region Tables
 
-    void ValidateTableStubs(List<TypeInfo> types)
+    #region ValidateTables()
+
+    void ValidateTables()
     {
-      Log.Info("Validating Tables");
-
-      foreach (var t in types)
+      foreach (var t in PesistentTypes)
       {
-        PropertyInfo piOwner = t.GetProperty(Owner, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
-
         string sqlTableExists = string.Format("SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND  TABLE_NAME = '{1}'", GetSchema(t), t.Name);
         int count = 0;
         using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sqlTableExists))
@@ -186,11 +173,9 @@ namespace Afx.Data.MsSql
 
         if (count == 0)
         {
-          Log.InfoFormat("[{0}].[{1}]", GetSchema(t), t.Name);
-          bool addType = false;
-          if (t.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() != null) addType = true;
+          Log.InfoFormat("Creating Table [{0}].[{1}]", GetSchema(t), t.Name);
 
-          string sql = string.Format("CREATE TABLE [{0}].[{1}] ([id] UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL CONSTRAINT [Default_{0}_{1}_id] DEFAULT NEWID(), [ix] INT NOT NULL IDENTITY(1,1){2}{3}) ON [PRIMARY]", GetSchema(t), t.Name, addType ? ", [RegisteredType] INT NOT NULL" : string.Empty, piOwner != null ? string.Format(", [Owner] uniqueidentifier {0}NULL", piOwner.PropertyType != t ? "NOT " : string.Empty) : string.Empty);
+          string sql = string.Format("CREATE TABLE [{0}].[{1}] ([id] UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL CONSTRAINT [Default_{0}_{1}_id] DEFAULT NEWID(), [ix] INT NOT NULL IDENTITY(1,1){2}) ON [PRIMARY]", GetSchema(t), t.Name, t.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() != null ? ", [RegisteredType] INT NOT NULL" : string.Empty);
           using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
           {
             cmd.ExecuteNonQuery();
@@ -202,37 +187,79 @@ namespace Afx.Data.MsSql
             cmd.ExecuteNonQuery();
           }
 
-          if (piOwner != null)
-          {
-            sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}]([Owner], ix)", GetSchema(t), t.Name);
-          }
-          else
-          {
-            sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}](ix)", GetSchema(t), t.Name);
-          }
-          using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
+          mCreatedTables.Add(t);
+        }
+      }
+    }
+
+    #endregion
+
+    #region UpdateTables()
+
+    void UpdateTables()
+    {
+      foreach (var t in mCreatedTables)
+      {
+        ITableCreated tableCreated = Afx.ExtensibilityManager.GetObject<ITableCreated>(t.AfxDbName());
+      }
+
+      foreach (var t in PesistentTypes)
+      {
+        string sql = null;
+        PropertyInfo piOwner = t.GetProperty(Owner, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
+
+        if (piOwner != null)
+        {
+          sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}]([Owner], ix); INSERT INTO [Afx].[RegisteredConstraints] ([RegisteredType], [ConstraintName]) SELECT [id], 'CIX_{0}_{1}' FROM [Afx].[RegisteredType] WHERE [AssemblyFullName]=@fn", GetSchema(t), t.Name);
+        }
+        else
+        {
+          sql = string.Format("CREATE UNIQUE CLUSTERED INDEX [CIX_{0}_{1}] ON [{0}].[{1}](ix); INSERT INTO [Afx].[RegisteredConstraints] ([RegisteredType], [ConstraintName]) SELECT [id], 'CIX_{0}_{1}' FROM [Afx].[RegisteredType] WHERE [AssemblyFullName]=@fn", GetSchema(t), t.Name);
+        }
+        Log.InfoFormat("Creating Clustered Index for {0}", t.AfxDbName());
+        using (var cmd = GetCommand(sql))
+        {
+          cmd.Parameters.AddWithValue("@fn", t.AfxTypeName());
+          cmd.ExecuteNonQuery();
+        }
+
+        if (t.BaseType.GetCustomAttribute<AfxBaseTypeAttribute>() != null && GetConstraint(t, RegisteredType) == null)
+        {
+          string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT FK_{1}_RegisteredType FOREIGN KEY ([RegisteredType]) REFERENCES [Afx].[RegisteredType]	([id])", GetSchema(t), t.Name);
+          using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateConstraint))
           {
             cmd.ExecuteNonQuery();
           }
+        }
 
-          sql = string.Format("EXEC sys.sp_addextendedproperty @name = N'Afx Managed', @value = N'Yes', @level0type = N'SCHEMA', @level0name = '{0}', @level1type = N'TABLE', @level1name = '{1}'", GetSchema(t), t.Name);
-          using (IDbCommand cmd = ConnectionScope.CurrentScope.GetCommand(sql))
-          {
-            cmd.ExecuteNonQuery();
-          }
+        if (PesistentTypes.Contains(t.BaseType))
+        {
+          ValidateContraint(t, Id, t.BaseType, !t.Equals(t.BaseType));
+        }
+      }
+    }
 
-          if (addType && GetRelationship(t, RegisteredType) == null)
+    #endregion
+
+    #region DropTables()
+
+    void DropTables()
+    {
+      string sql = "SELECT * FROM [Afx].[RegisteredType]";
+      using (var cmd = GetCommand(sql))
+      {
+        DataSet ds = ExecuteDataSet(cmd);
+        foreach (DataRow dr in ds.Tables[0].Rows)
+        {
+          if (Type.GetType((string)dr["AssemblyFullName"]) == null)
           {
-            string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT FK_{1}_RegisteredType FOREIGN KEY ([RegisteredType]) REFERENCES [Afx].[RegisteredType]	([id])", GetSchema(t), t.Name);
-            using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateConstraint))
+            Log.InfoFormat("Dropping Table [{0}].[{1}]", dr["Schema"], dr["TableName"]);
+            sql = string.Format("DROP TABLE [{0}].[{1}]; DELETE FROM [Afx].[RegisteredType] WHERE [id]=@id", dr["Schema"], dr["TableName"]);
+            using (var cmd1 = GetCommand(sql))
             {
-              cmd.ExecuteNonQuery();
+              cmd1.Parameters.AddWithValue("@id", dr["id"]);
+              cmd1.ExecuteNonQuery();
             }
-          }
-
-          if (types.Contains(t.BaseType))
-          {
-            ValidateRelationship(t, Id, t.BaseType, !t.Equals(t.BaseType));
           }
         }
       }
@@ -240,13 +267,15 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region ValidateTableProperties()
+    #endregion
 
-    void ValidateTableProperties(List<TypeInfo> types)
+    #region Table Columns
+
+    #region ValidateTableColumns()
+
+    void ValidateTableColumns()
     {
-      Log.Info("Validating Columns");
-
-      foreach (var t in types)
+      foreach (var t in PesistentTypes)
       {
         List<PropertyInfo> processedProperties = new List<PropertyInfo>();
         DataSet ds = GetExistingTableColumns(t);
@@ -270,7 +299,7 @@ namespace Afx.Data.MsSql
               piOwner = pi;
             }
             if (pi.Name == Reference) piReference = pi;
-            if (!DoesColumnExist(ds, pi.AfxDbName(t))) CreateTableProperty(pi, t, isNullable);
+            if (!DoesColumnExist(ds, pi.AfxDbName(t))) CreateTableColumn(pi, t, isNullable);
             processedProperties.Add(pi);
           }
         }
@@ -279,8 +308,7 @@ namespace Afx.Data.MsSql
 
         foreach (var pi in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
         {
-          if (!DoesColumnExist(ds, pi.AfxDbName())) CreateTableProperty(pi, t, true);
-          UpdateTableProperty(pi, t, pi.GetCustomAttribute<RequiredAttribute>() == null);
+          if (!DoesColumnExist(ds, pi.AfxDbName())) CreateTableColumn(pi, t, true);
           processedProperties.Add(pi);
         }
 
@@ -302,13 +330,51 @@ namespace Afx.Data.MsSql
       }
     }
 
+    #endregion
+
+    #region void UpdateTableColumns()
+
+    void UpdateTableColumns()
+    {
+      foreach (var t in PesistentTypes)
+      {
+        if (t.GetAfxImplementationRoot().Equals(t))
+        {
+          if (t.GetGenericSubClass(typeof(AfxObject<>)) != null || t.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
+          {
+            var pi = t.GetProperty(Owner, BindingFlags.Public | BindingFlags.Instance);
+            if (pi != null)
+            {
+              UpdateTableColumn(pi, t, pi.PropertyType.Equals(t));
+            }
+          }
+
+          if (t.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
+          {
+            var pi = t.GetProperty(Reference, BindingFlags.Public | BindingFlags.Instance);
+            if (pi != null)
+            {
+              UpdateTableColumn(pi, t, false);
+            }
+          }
+        }
+
+        foreach (var pi in t.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly | BindingFlags.GetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))
+        {
+          UpdateTableColumn(pi, t, pi.GetCustomAttribute<RequiredAttribute>() == null);
+        }
+      }
+    }
+
+    #endregion
+
     #region DropColumn()
 
     void DropColumn(Type type, DataRow drColumn)
     {
       try
       {
-        DataRow dr1 = GetRelationship(type, (string)drColumn["COLUMN_NAME"]);
+        DataRow dr1 = GetConstraint(type, (string)drColumn["COLUMN_NAME"]);
         if (dr1 != null)
         {
           Log.WarnFormat("Dropping Constraint [{0}]", dr1["ConstraintName"]);
@@ -398,23 +464,18 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region CreateTableProperty()
+    #region CreateTableColumn()
 
-    void CreateTableProperty(PropertyInfo pi, Type definingType, bool allowNull)
+    void CreateTableColumn(PropertyInfo pi, Type definingType, bool allowNull)
     {
       string dbTypeText = GetDbDataType(pi, definingType);
-      Log.InfoFormat("{0}: {1}", pi.AfxDbName(definingType), dbTypeText);
+      Log.InfoFormat("Creating Column {0}: {1}", pi.AfxDbName(definingType), dbTypeText);
 
       string schemaName = GetSchema(definingType);
       string sqlColumn = string.Format("ALTER TABLE [{0}].[{1}] ADD [{2}] {3}{4} NULL", schemaName, definingType.Name, pi.Name, dbTypeText, allowNull ? string.Empty : " NOT"); //TODO: Filestream
-      using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlColumn))
+      using (var cmd = GetCommand(sqlColumn))
       {
         cmd.ExecuteNonQuery();
-      }
-
-      if (pi.PropertyType.IsSubclassOf(typeof(AfxObject)))
-      {
-        ValidateRelationship(definingType, pi.Name, pi.PropertyType, pi.Name == Owner && !pi.PropertyType.Equals(definingType));
       }
 
       IColumnCreated cc = Afx.ExtensibilityManager.GetObject<IColumnCreated>(pi.AfxDbName());
@@ -423,9 +484,9 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region UpdateTableProperty()
+    #region UpdateTableColumn()
 
-    void UpdateTableProperty(PropertyInfo pi, Type definingType, bool allowNull)
+    void UpdateTableColumn(PropertyInfo pi, Type definingType, bool allowNull)
     {
       string dbTypeText = GetDbDataType(pi, definingType);
       string schemaName = GetSchema(definingType);
@@ -434,58 +495,66 @@ namespace Afx.Data.MsSql
       {
         cmd.ExecuteNonQuery();
       }
-    }
 
-    #endregion
-
-    #endregion
-
-    #region ValidateRelationship()
-
-    void ValidateRelationship(Type ownerType, string propertyName, Type referencedType, bool cascadeDelete)
-    {
-      DataRow dr = GetRelationship(ownerType, propertyName);
-      if (dr == null)
+      if (pi.PropertyType.IsSubclassOf(typeof(AfxObject)))
       {
-        CreateRelationship(ownerType, propertyName, referencedType, cascadeDelete);
+        ValidateContraint(definingType, pi.Name, pi.PropertyType, pi.Name == Owner && !pi.PropertyType.Equals(definingType));
       }
     }
 
-    #region GetRelationship()
+    #endregion
 
-    //DataRow GetRelationship(Type ownerType, string propertyName, Type referencedType)
-    //{
-    //  string sql = @" select	RC.CONSTRAINT_NAME as ConstraintName
-    //                    ,		CCU1.TABLE_SCHEMA as OwnerSchema
-    //                    ,		CCU1.TABLE_NAME as OwnerTable
-    //                    ,		CCU1.COLUMN_NAME as OwnerColumn
-    //                    ,		CCU2.TABLE_SCHEMA as ReferencedSchema
-    //                    ,		CCU2.TABLE_NAME as ReferencedTable
-    //                    ,		CCU2.COLUMN_NAME as ReferencedColumn
-    //                    ,		RC.UPDATE_RULE as [Update]
-    //                    ,		RC.DELETE_RULE as [Delete]
-    //                    from INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
-    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_TABLE_USAGE CTU on CTU.CONSTRAINT_NAME=RC.CONSTRAINT_NAME
-    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU1 on RC.CONSTRAINT_NAME=CCU1.CONSTRAINT_NAME
-    //                    inner join INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE CCU2 on RC.UNIQUE_CONSTRAINT_NAME=CCU2.CONSTRAINT_NAME
-    //                    where CCU1.TABLE_SCHEMA=@osn and CCU1.TABLE_NAME=@otn and CCU1.COLUMN_NAME=@ocn
-    //                    and   CCU2.TABLE_SCHEMA=@rsn and CCU2.TABLE_NAME=@rtn and CCU2.COLUMN_NAME=@rcn";
+    #endregion
 
-    //  using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sql))
-    //  {
-    //    cmd.Parameters.AddWithValue("@osn", GetSchema(ownerType));
-    //    cmd.Parameters.AddWithValue("@otn", ownerType.Name);
-    //    cmd.Parameters.AddWithValue("@ocn", propertyName); // Id);
-    //    cmd.Parameters.AddWithValue("@rsn", GetSchema(referencedType));
-    //    cmd.Parameters.AddWithValue("@rtn", referencedType.Name);
-    //    cmd.Parameters.AddWithValue("@rcn", Id);
-    //    DataSet ds = ExecuteDataSet(cmd);
-    //    if (ds.Tables[0].Rows.Count == 0) return null;
-    //    return ds.Tables[0].Rows[0];
-    //  }
-    //}
+    #region Constraints 
 
-    DataRow GetRelationship(Type ownerType, string propertyName)
+    #region DropConstraints()
+
+    void DropConstraints()
+    {
+      try
+      {
+        string sql = "SELECT [RC].[id], [RT].[Schema], [RT].[TableName], [RC].[ConstraintName] FROM [Afx].[RegisteredConstraints] [RC] INNER JOIN [Afx].[RegisteredType] [RT] on [RT].[id]=[RC].[RegisteredType]";
+        using (var cmd = GetCommand(sql))
+        {
+          DataSet ds = ExecuteDataSet(cmd);
+          foreach (DataRow dr in ds.Tables[0].Rows)
+          {
+            Log.InfoFormat("Dropping Constraint {0}", dr["ConstraintName"]);
+            if (((string)dr["ConstraintName"]).StartsWith("CIX_")) sql = string.Format("DROP INDEX [{2}] ON [{0}].[{1}] WITH ( ONLINE = OFF ); DELETE FROM [Afx].[RegisteredConstraints] WHERE [id]=@id", dr["Schema"], dr["TableName"], dr["ConstraintName"]);
+            else sql = string.Format("ALTER TABLE [{0}].[{1}] DROP CONSTRAINT [{2}]; DELETE FROM [Afx].[RegisteredConstraints] WHERE [id]=@id", dr["Schema"], dr["TableName"], dr["ConstraintName"]);
+            using (var cmd1 = GetCommand(sql))
+            {
+              cmd1.Parameters.AddWithValue("@id", dr["id"]);
+              cmd1.ExecuteNonQuery();
+            }
+          }
+        }
+      }
+      catch
+      {
+        throw;
+      }
+    }
+
+    #endregion
+
+    #region ValidateContraint()
+
+    void ValidateContraint(Type ownerType, string propertyName, Type referencedType, bool cascadeDelete)
+    {
+      DataRow dr = GetConstraint(ownerType, propertyName);
+      if (dr == null)
+      {
+        CreateConstraint(ownerType, propertyName, referencedType, cascadeDelete);
+      }
+    }
+
+    #endregion
+
+    #region GetConstraint()
+
+    DataRow GetConstraint(Type ownerType, string propertyName)
     {
       string sql = @" select	RC.CONSTRAINT_NAME as ConstraintName
                         ,		CCU1.TABLE_SCHEMA as OwnerSchema
@@ -515,24 +584,19 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region CreateRelationship()
+    #region CreateConstraint()
 
-    void CreateRelationship(Type ownerType, string propertyName, Type referencedType, bool cascadeDelete)
+    void CreateConstraint(Type ownerType, string propertyName, Type referencedType, bool cascadeDelete)
     {
       try
       {
         Log.InfoFormat("Creating Constraint for {0}.[{1}]", ownerType.AfxDbName(), propertyName);
-        string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT FK_{1}_{2} FOREIGN KEY ([{3}]) REFERENCES [{4}].[{2}]	([{5}]) ON UPDATE NO ACTION ON DELETE {6}", GetSchema(ownerType), ownerType.Name, referencedType.Name, propertyName, GetSchema(referencedType), Id, cascadeDelete ? "CASCADE" : "NO ACTION");
+        string sqlCreateConstraint = string.Format("ALTER TABLE [{0}].[{1}] ADD CONSTRAINT [FK_{1}_{2}] FOREIGN KEY ([{3}]) REFERENCES [{4}].[{2}]	([{5}]) ON UPDATE NO ACTION ON DELETE {6}; INSERT INTO [Afx].[RegisteredConstraints] ([RegisteredType], [ConstraintName]) SELECT [id], 'FK_{1}_{2}' FROM [Afx].[RegisteredType] WHERE [AssemblyFullName]=@fn", GetSchema(ownerType), ownerType.Name, referencedType.Name, propertyName, GetSchema(referencedType), Id, cascadeDelete ? "CASCADE" : "NO ACTION");
         using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateConstraint))
         {
+          cmd.Parameters.AddWithValue("@fn", ownerType.AfxTypeName());
           cmd.ExecuteNonQuery();
         }
-
-        //string sqlCreateIndex = string.Format("CREATE NONCLUSTERED INDEX IX_{0}_{2} ON [{1}].[{0}]([{2}])", ownerType.Name, GetSchema(ownerType), propertyName);
-        //using (SqlCommand cmd = (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sqlCreateIndex))
-        //{
-        //  cmd.ExecuteNonQuery();
-        //}
       }
       catch
       {
@@ -541,6 +605,32 @@ namespace Afx.Data.MsSql
     }
 
     #endregion
+
+    #endregion
+
+    #region Triggers
+
+    #region GetTableInsteadOfDeleteTrigger()
+
+    Dictionary<Type, StringWriter> mTableInsteadOfDeleteTriggers;
+    StringWriter GetTableInsteadOfDeleteTrigger(Type type)
+    {
+      if (mTableInsteadOfDeleteTriggers == null) mTableInsteadOfDeleteTriggers = new Dictionary<Type, StringWriter>();
+      if (!mTableInsteadOfDeleteTriggers.ContainsKey(type)) mTableInsteadOfDeleteTriggers.Add(type, new StringWriter());
+      return mTableInsteadOfDeleteTriggers[type];
+    }
+
+    #endregion
+
+    #region GetTableAfterDeleteTrigger()
+
+    Dictionary<Type, StringWriter> mTableAfterDeleteTriggers;
+    StringWriter GetTableAfterDeleteTrigger(Type type)
+    {
+      if (mTableAfterDeleteTriggers == null) mTableAfterDeleteTriggers = new Dictionary<Type, StringWriter>();
+      if (!mTableAfterDeleteTriggers.ContainsKey(type)) mTableAfterDeleteTriggers.Add(type, new StringWriter());
+      return mTableAfterDeleteTriggers[type];
+    }
 
     #endregion
 
@@ -584,11 +674,11 @@ namespace Afx.Data.MsSql
     const string InsteadOfDelete = "InsteadOfDelete";
     const string AfterDelete = "AfterDelete";
 
-    void WriteDeleteTriggers(List<TypeInfo> types)
+    void WriteDeleteTriggers()
     {
       try
       {
-        foreach (Type type in types)
+        foreach (Type type in PesistentTypes)
         {
           DeleteTriggerIfExists(type, InsteadOfDelete);
           if (mTableInsteadOfDeleteTriggers == null || !mTableInsteadOfDeleteTriggers.ContainsKey(type)) continue;
@@ -614,7 +704,7 @@ namespace Afx.Data.MsSql
           }
         }
 
-        foreach (Type type in types)
+        foreach (Type type in PesistentTypes)
         {
           DeleteTriggerIfExists(type, AfterDelete);
           if (mTableAfterDeleteTriggers == null || !mTableAfterDeleteTriggers.ContainsKey(type)) continue;
@@ -666,6 +756,21 @@ namespace Afx.Data.MsSql
       {
         return (string)cmd.ExecuteScalar();
       }
+    }
+
+    #endregion
+
+    #endregion
+
+    #region GetCommand()
+
+    SqlCommand GetCommand(string sql)
+    {
+      return (SqlCommand)ConnectionScope.CurrentScope.GetCommand(sql);
+    }
+    SqlCommand GetCommand()
+    {
+      return (SqlCommand)GetCommand(string.Empty);
     }
 
     #endregion

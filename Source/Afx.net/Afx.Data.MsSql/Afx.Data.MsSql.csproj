@@ -59,6 +59,7 @@
     <Compile Include="IColumnCreated.cs" />
     <Compile Include="IDbText.cs" />
     <Compile Include="IDefaultDbText.cs" />
+    <Compile Include="ITableCreated.cs" />
     <Compile Include="MsSqlDataBuilder.cs" />
     <Compile Include="MsSqlCommandProvider.cs" />
     <Compile Include="MsSqlObjectRepository.cs" />

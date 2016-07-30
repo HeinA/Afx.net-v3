@@ -10,6 +10,7 @@ namespace Test.Business
 {
   [Persistent]
   [DataCache]
+  [OrderBy("Name")]
   public class LedgerAccount : Afx.AfxObject<LedgerAccount>
   {
     #region string Name

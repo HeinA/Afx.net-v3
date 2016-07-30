@@ -11,6 +11,7 @@ namespace Afx
   {
     Guid Id { get; set; }
     IAfxObject Owner { get; set; }
+    Type OwnerType { get; }
     bool IsDirty { get; set; }
   }
 }

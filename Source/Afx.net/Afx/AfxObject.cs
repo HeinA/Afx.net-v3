@@ -64,6 +64,20 @@ namespace Afx
 
     #endregion
 
+    #region OwnerType
+
+    protected virtual Type OwnerType
+    {
+      get { return null; }
+    }
+
+    Type IAfxObject.OwnerType
+    {
+      get { return OwnerType; }
+    }
+
+    #endregion
+
     #region Guid Id
 
     public const string IdProperty = "Id";
@@ -313,6 +327,15 @@ namespace Afx
     {
       if (owner != null && !typeof(TOwner).GetTypeInfo().IsAssignableFrom(owner.GetType().GetTypeInfo())) throw new InvalidCastException(Properties.Resources.InvalidOwnerType);
       return owner;
+    }
+
+    #endregion
+
+    #region Type OwnerType
+
+    protected override Type OwnerType
+    {
+      get { return typeof(TOwner); }
     }
 
     #endregion

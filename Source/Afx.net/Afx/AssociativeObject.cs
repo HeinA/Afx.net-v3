@@ -30,7 +30,7 @@ namespace Afx
 
     #endregion
 
-    #region IAfxObject Reference
+    #region IAssociativeObject Reference
 
     public const string ReferenceProperty = "Reference";
     IAfxObject mReference;
@@ -109,6 +109,15 @@ namespace Afx
     {
       if (!(reference is TReference)) throw new InvalidCastException(Properties.Resources.InvalidReferenceType);
       return reference;
+    }
+
+    #endregion
+
+    #region Type OwnerType
+
+    protected override Type OwnerType
+    {
+      get { return typeof(TOwner); }
     }
 
     #endregion

@@ -24,32 +24,33 @@ namespace TestConsoleApplication
 
     public IDbConnection GetConnection()
     {
-      string mdfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), MdfFile);
-      string connectionString = string.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={0};Integrated Security=True;", mdfFilename);
-      return new SqlConnection(connectionString);
+      return new SqlConnection(ConfigurationManager.ConnectionStrings[ConnectionName].ConnectionString);
+      //string mdfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), MdfFile);
+      //string connectionString = string.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={0};Integrated Security=True;", mdfFilename);
+      //return new SqlConnection(connectionString);
     }
 
     public bool VerifyConnection()
     {
-      using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Suppress))
-      {
-        string mdfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), MdfFile);
-        string ldfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LdfFile);
-        new FileInfo(mdfFilename).Directory.Create();
-        if (!File.Exists(mdfFilename))
-        {
-          using (SqlConnection con = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;Integrated Security=True;"))
-          {
-            con.Open();
+      //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Suppress))
+      //{
+      //  string mdfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), MdfFile);
+      //  string ldfFilename = string.Format(@"{0}\{1}", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LdfFile);
+      //  new FileInfo(mdfFilename).Directory.Create();
+      //  if (!File.Exists(mdfFilename))
+      //  {
+      //    using (SqlConnection con = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;Integrated Security=True;"))
+      //    {
+      //      con.Open();
 
-            string sql = string.Format(@"CREATE DATABASE [Afx] ON PRIMARY (NAME=Afx_Data, FILENAME = '{0}') LOG ON (NAME=Afx_log, FILENAME = '{1}')", mdfFilename, ldfFilename);
-            SqlCommand command = new SqlCommand(sql, con);
-            command.ExecuteNonQuery();
-            con.Close();
-          }
-        }
+      //      string sql = string.Format(@"CREATE DATABASE [Afx] ON PRIMARY (NAME=Afx_Data, FILENAME = '{0}') LOG ON (NAME=Afx_log, FILENAME = '{1}')", mdfFilename, ldfFilename);
+      //      SqlCommand command = new SqlCommand(sql, con);
+      //      command.ExecuteNonQuery();
+      //      con.Close();
+      //    }
+      //  }
         return true;
-      }
+      //}
     }
   }
 }

@@ -55,23 +55,24 @@ namespace TestConsoleApplication
 
       DataScope.CurrentScope.BuildAndLoadRepositoriesInMemory();
 
-      using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
-      using (new ConnectionScope())
-      {
-        DataBuilder.ValidateSystemObjects();
-        ts.Complete();
-      }
+      //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
+      //using (new ConnectionScope())
+      //{
+      //  //DataBuilder.ValidateSystemObjects();
+      //  GenerateLedgerAccounts();
+      //  ts.Complete();
+      //}
 
       var dc = DataCache<LedgerAccount>.Get();
-      dc.DataCacheUpdated += LedgerAccount_DataCacheUpdated;
+      //dc.DataCacheUpdated += LedgerAccount_DataCacheUpdated;
 
-      Administrator a = Administrator.Instance;
+      //Administrator a = Administrator.Instance;
 
-      using (new ConnectionScope())
-      {
-        Administrator aa = ObjectRepository<Administrator>.Get().LoadObjects()[0];
-        Console.WriteLine(a.Equals(aa));
-      }
+      //using (new ConnectionScope())
+      //{
+      //  Administrator aa = ObjectRepository<Administrator>.Get().LoadObjects()[0];
+      //  Console.WriteLine(a.Equals(aa));
+      //}
 
 
       //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
@@ -86,10 +87,12 @@ namespace TestConsoleApplication
       //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
       //using (new ConnectionScope())
       //{
+      //  GenerateLedgerAccounts();
+
       //  Guid id = Guid.Parse("{E90A63F6-ED19-4523-A282-AB325F185971}");
-      //  PurchaseOrder po = ObjectRepository<PurchaseOrder>.Get().LoadObject(id);
-      //  //PurchaseOrder po = new PurchaseOrder() { Id = id, CustomerName = "Piet", DocumentDate = DateTime.Now, DocumentNumber = "PO0002", SourceAccount = ong };
-      //  //ObjectRepository<PurchaseOrder>.Get().SaveObject(po);
+      //  PurchaseOrder po = new PurchaseOrder() { Id = id, CustomerName = "Piet", DocumentDate = DateTime.Now, DocumentNumber = "PO0002" };
+      //  ObjectRepository<PurchaseOrder>.Get().SaveObject(po);
+      //  po = ObjectRepository<PurchaseOrder>.Get().LoadObject(id);
       //  ts.Complete();
       //}
 

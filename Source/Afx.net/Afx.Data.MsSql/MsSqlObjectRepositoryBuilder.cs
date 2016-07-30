@@ -171,8 +171,8 @@ namespace Afx.Data.MsSql
       WriteUpdate(tw, type);
       if (afxImplementationRoot == type)
       {
-        tw.WriteLine("context.SavedObjects.Add(target);");
         tw.WriteLine();
+        tw.WriteLine("context.SavedObjects.Add(target);");
       }
       tw.Indent--;
       tw.WriteLine("}");
@@ -206,7 +206,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("foreach (var item in target.{0})", pi.Name);
       tw.WriteLine("{");
       tw.Indent++;
-      tw.WriteLine("RepositoryFor<{0}>().SaveObject(item, context);", itemType.FullName);
+      tw.WriteLine("RepositoryInterfaceFor(item.GetType()).SaveObjectCore(item, context);");
       tw.Indent--;
       tw.WriteLine("}");
 
@@ -216,7 +216,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("foreach ({0} obj in target.{1}.DeletedItems)", itemType.FullName, pi.Name);
       tw.WriteLine("{");
       tw.Indent++;
-      tw.WriteLine("RepositoryFor<{0}>().DeleteObject(obj);", itemType.FullName);
+      tw.WriteLine("RepositoryInterfaceFor(obj.GetType()).DeleteObjectCore(obj);", itemType.FullName);
       tw.WriteLine("context.DeletedObjects.Add(obj);");
       tw.Indent--;
       tw.WriteLine("}");
@@ -232,7 +232,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("{");
       tw.Indent++;
       tw.WriteLine("{0} ao = target.{1}[item];", associativeType.FullName, pi.Name);
-      tw.WriteLine("RepositoryFor<{0}>().SaveObject(ao, context);", associativeType.FullName);
+      tw.WriteLine("RepositoryInterfaceFor(ao.GetType()).SaveObjectCore(ao, context);", associativeType.FullName);
       tw.Indent--;
       tw.WriteLine("}");
 
@@ -242,7 +242,7 @@ namespace Afx.Data.MsSql
       tw.WriteLine("foreach ({0} obj in target.{1}.DeletedItems)", associativeType.FullName, pi.Name);
       tw.WriteLine("{");
       tw.Indent++;
-      tw.WriteLine("RepositoryFor<{0}>().DeleteObject(obj);", associativeType.FullName);
+      tw.WriteLine("RepositoryInterfaceFor(obj.GetType()).DeleteObjectCore(obj);", associativeType.FullName);
       tw.WriteLine("context.DeletedObjects.Add(obj);");
       tw.Indent--;
       tw.WriteLine("}");
@@ -298,7 +298,7 @@ namespace Afx.Data.MsSql
       tw.Write(string.Join(", ", GetWriteColumns(type, true)));
       tw.Write(") SELECT ");
       tw.Write(string.Join(", ", GetWriteValues(type, true)));
-      if (type == afxImplementationRoot) tw.WriteLine(" FROM [Afx].[RegisteredType] [RT] WHERE [RT].[FullName]=@assemblyFullName\";");
+      if (type == afxImplementationRoot) tw.WriteLine(" FROM [Afx].[RegisteredType] [RT] WHERE [RT].[AssemblyFullName]=@assemblyFullName\";");
       else tw.WriteLine("\";");
       tw.WriteLine("Log.Debug(sql);");
       tw.WriteLine();
@@ -310,7 +310,7 @@ namespace Afx.Data.MsSql
       if (associativeType != null)
       {
         tw.WriteLine("cmd.Parameters.AddWithValue(\"@owner\", target.Owner != null ? (object)target.Owner.Id : (object)System.DBNull.Value);");
-        tw.WriteLine("cmd.Parameters.AddWithValue(\"@reference\", target.Reference);");
+        tw.WriteLine("cmd.Parameters.AddWithValue(\"@reference\", target.Reference.Id);");
       }
       else if (ownedType != null)
       {
@@ -493,7 +493,7 @@ namespace Afx.Data.MsSql
       if (type == afxImplementationRoot)
       {
         columns.Add(string.Format("{0}.[id]", type.AfxDbName()));
-        columns.Add("[Afx].[RegisteredType].[FullName] as AssemblyFullName");
+        columns.Add("[Afx].[RegisteredType].[AssemblyFullName]");
         if (ownedType != null) columns.Add(string.Format("{0}.[Owner]", type.AfxDbName()));
         if (associativeType != null) columns.Add(string.Format("{0}.[Reference]", type.AfxDbName()));
         foreach (var pi in type.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.SetProperty).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null))

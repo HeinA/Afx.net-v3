@@ -60,6 +60,7 @@
     <Compile Include="AfxAssemblyAttribute.cs" />
     <Compile Include="AfxBaseTypeAttribute.cs" />
     <Compile Include="Data\SchemaAttribute.cs" />
+    <Compile Include="Data\OrderByAttribute.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IAfxObject.cs" />
     <Compile Include="IAssociativeObject.cs" />

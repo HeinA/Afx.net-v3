@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace Test.Business
 {
   [Persistent]
+  [OrderBy("DocumentNumber DESC")]
   public abstract class Document : Afx.AfxObject
   {
     #region string DocumentNumber
