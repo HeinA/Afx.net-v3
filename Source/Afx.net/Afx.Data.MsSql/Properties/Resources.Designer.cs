@@ -61,6 +61,69 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Could not resolve the Type near &apos;{0}&apos;.
+        /// </summary>
+        internal static string CouldNotResolveType {
+            get {
+                return ResourceManager.GetString("CouldNotResolveType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; can not be casted to type &apos;{1}&apos;.
+        /// </summary>
+        internal static string InvalidCast {
+            get {
+                return ResourceManager.GetString("InvalidCast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Object Property near &apos;{0}&apos;.
+        /// </summary>
+        internal static string InvalidObjectProperty {
+            get {
+                return ResourceManager.GetString("InvalidObjectProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Operator near &apos;{0}&apos;.
+        /// </summary>
+        internal static string InvalidOperator {
+            get {
+                return ResourceManager.GetString("InvalidOperator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Parameter name should start with an &apos;@&apos;.
+        /// </summary>
+        internal static string InvalidParameterName {
+            get {
+                return ResourceManager.GetString("InvalidParameterName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Operator &apos;{0}&apos; expects a string value.
+        /// </summary>
+        internal static string OperatorOnlyValidOnStrings {
+            get {
+                return ResourceManager.GetString("OperatorOnlyValidOnStrings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Parameter &apos;{0}&apos; has not been provided.
+        /// </summary>
+        internal static string ParameterNotProvided {
+            get {
+                return ResourceManager.GetString("ParameterNotProvided", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The Repository compilation resulted in errors.
         /// </summary>
         internal static string RepositoryCompilationErrors {

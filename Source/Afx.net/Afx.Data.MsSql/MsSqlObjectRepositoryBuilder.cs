@@ -85,6 +85,7 @@ namespace Afx.Data.MsSql
         CompilerParameters cp = new CompilerParameters();
 
         cp.ReferencedAssemblies.Add(this.GetType().Assembly.GetName().Name + ".dll");
+        cp.ReferencedAssemblies.Add("System.Reflection.dll");
         cp.ReferencedAssemblies.Add("System.Runtime.dll");
         cp.ReferencedAssemblies.Add("System.ObjectModel.dll");
 

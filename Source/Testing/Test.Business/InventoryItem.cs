@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace Test.Business
 {
   [Persistent]
+  [AggregateReference]
   public class InventoryItem : AfxObject
   {
     #region string Name

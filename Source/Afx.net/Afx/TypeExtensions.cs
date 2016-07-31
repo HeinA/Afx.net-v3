@@ -16,5 +16,24 @@ namespace Afx
       if (ti.BaseType.GetTypeInfo().GetCustomAttribute<AfxBaseTypeAttribute>() != null) return type;
       return ti.BaseType.GetAfxImplementationRoot();
     }
+
+    public static Type GetGenericSubClass(this Type type, Type targetType)
+    {
+      return GetGenericSubClass(type.GetTypeInfo(), targetType.GetTypeInfo())?.AsType();
+    }
+
+    public static TypeInfo GetGenericSubClass(this TypeInfo type, TypeInfo targetType)
+    {
+      while (type != null && type != typeof(object).GetTypeInfo())
+      {
+        var cur = type.IsGenericType ? type.GetGenericTypeDefinition().GetTypeInfo() : type;
+        if (targetType == cur)
+        {
+          return type;
+        }
+        type = type.BaseType.GetTypeInfo();
+      }
+      return null;
+    }
   }
 }

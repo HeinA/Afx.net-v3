@@ -57,9 +57,9 @@ namespace Afx.Data.MsSql
       }
     }
 
-    #region ActivePesistentTypes
+    #region PersistentTypes
 
-    IEnumerable<TypeInfo> PesistentTypes
+    IEnumerable<TypeInfo> PersistentTypes
     {
       get
       {
@@ -93,7 +93,7 @@ namespace Afx.Data.MsSql
     {
       List<string> schemas = new List<string>();
       schemas.Add("Afx");
-      foreach (var a in PesistentTypes.Select(t => t.Assembly).Distinct())
+      foreach (var a in PersistentTypes.Select(t => t.Assembly).Distinct())
       {
         var schema = GetSchema(a);
         if (!schemas.Contains(schema)) schemas.Add(schema);
@@ -141,7 +141,7 @@ namespace Afx.Data.MsSql
         }
       }
 
-      foreach (var t in PesistentTypes)
+      foreach (var t in PersistentTypes)
       {
         string sql = "INSERT INTO [Afx].[RegisteredType] ([AssemblyFullName], [Schema], [TableName]) SELECT @tn, @sn, @tbl WHERE NOT EXISTS (SELECT 1 FROM [Afx].[RegisteredType] WHERE [AssemblyFullName]=@tn)";
         using (var cmd = GetCommand(sql))
@@ -162,7 +162,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTables()
     {
-      foreach (var t in PesistentTypes)
+      foreach (var t in PersistentTypes)
       {
         string sqlTableExists = string.Format("SELECT COUNT(1) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{0}' AND  TABLE_NAME = '{1}'", GetSchema(t), t.Name);
         int count = 0;
@@ -203,7 +203,7 @@ namespace Afx.Data.MsSql
         ITableCreated tableCreated = Afx.ExtensibilityManager.GetObject<ITableCreated>(t.AfxDbName());
       }
 
-      foreach (var t in PesistentTypes)
+      foreach (var t in PersistentTypes)
       {
         string sql = null;
         PropertyInfo piOwner = t.GetProperty(Owner, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
@@ -232,7 +232,7 @@ namespace Afx.Data.MsSql
           }
         }
 
-        if (PesistentTypes.Contains(t.BaseType))
+        if (PersistentTypes.Contains(t.BaseType))
         {
           ValidateContraint(t, Id, t.BaseType, !t.Equals(t.BaseType));
         }
@@ -275,7 +275,7 @@ namespace Afx.Data.MsSql
 
     void ValidateTableColumns()
     {
-      foreach (var t in PesistentTypes)
+      foreach (var t in PersistentTypes)
       {
         List<PropertyInfo> processedProperties = new List<PropertyInfo>();
         DataSet ds = GetExistingTableColumns(t);
@@ -336,7 +336,7 @@ namespace Afx.Data.MsSql
 
     void UpdateTableColumns()
     {
-      foreach (var t in PesistentTypes)
+      foreach (var t in PersistentTypes)
       {
         if (t.GetAfxImplementationRoot().Equals(t))
         {
@@ -678,7 +678,7 @@ namespace Afx.Data.MsSql
     {
       try
       {
-        foreach (Type type in PesistentTypes)
+        foreach (Type type in PersistentTypes)
         {
           DeleteTriggerIfExists(type, InsteadOfDelete);
           if (mTableInsteadOfDeleteTriggers == null || !mTableInsteadOfDeleteTriggers.ContainsKey(type)) continue;
@@ -704,7 +704,7 @@ namespace Afx.Data.MsSql
           }
         }
 
-        foreach (Type type in PesistentTypes)
+        foreach (Type type in PersistentTypes)
         {
           DeleteTriggerIfExists(type, AfterDelete);
           if (mTableAfterDeleteTriggers == null || !mTableAfterDeleteTriggers.ContainsKey(type)) continue;

@@ -117,6 +117,27 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CouldNotResolveType" xml:space="preserve">
+    <value>Could not resolve the Type near '{0}'</value>
+  </data>
+  <data name="InvalidCast" xml:space="preserve">
+    <value>Type '{0}' can not be casted to type '{1}'</value>
+  </data>
+  <data name="InvalidObjectProperty" xml:space="preserve">
+    <value>Invalid Object Property near '{0}'</value>
+  </data>
+  <data name="InvalidOperator" xml:space="preserve">
+    <value>Invalid Operator near '{0}'</value>
+  </data>
+  <data name="InvalidParameterName" xml:space="preserve">
+    <value>Parameter name should start with an '@'</value>
+  </data>
+  <data name="OperatorOnlyValidOnStrings" xml:space="preserve">
+    <value>Operator '{0}' expects a string value</value>
+  </data>
+  <data name="ParameterNotProvided" xml:space="preserve">
+    <value>Parameter '{0}' has not been provided</value>
+  </data>
   <data name="RepositoryCompilationErrors" xml:space="preserve">
     <value>The Repository compilation resulted in errors</value>
   </data>

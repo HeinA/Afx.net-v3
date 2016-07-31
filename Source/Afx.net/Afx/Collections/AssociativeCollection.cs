@@ -18,6 +18,7 @@ namespace Afx.Collections
     , KeyName = Constants.WcfAssociativeCollectionReferenceName
     , ValueName = Constants.WcfAssociativeCollectionAssociativeName
     , IsReference = true)]
+  [AfxBaseType]
   public sealed class AssociativeCollection<TItem, TAssociative> : ObjectCollection<TItem>, IAssociativeCollection
     where TItem : class, IAfxObject
     where TAssociative : class, IAssociativeObject, new()

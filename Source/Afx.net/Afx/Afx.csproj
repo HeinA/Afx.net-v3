@@ -53,6 +53,10 @@
     <Compile Include="Collections\ObjectCollection.cs" />
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Data\AggregateAttribute.cs" />
+    <Compile Include="Data\AggregateCollection.cs" />
+    <Compile Include="Data\AggregateObject.cs" />
+    <Compile Include="Data\AggregateReference.cs" />
     <Compile Include="Data\CompositeReferenceAttribute.cs" />
     <Compile Include="Data\DataCacheAttribute.cs" />
     <Compile Include="Data\DefaultsToNullAttribute.cs" />
@@ -61,6 +65,7 @@
     <Compile Include="AfxBaseTypeAttribute.cs" />
     <Compile Include="Data\SchemaAttribute.cs" />
     <Compile Include="Data\OrderByAttribute.cs" />
+    <Compile Include="Data\TypeExtensions.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IAfxObject.cs" />
     <Compile Include="IAssociativeObject.cs" />

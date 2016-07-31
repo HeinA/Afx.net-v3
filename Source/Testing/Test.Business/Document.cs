@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace Test.Business
 {
   [Persistent]
+  [AggregateObject]
   [OrderBy("DocumentNumber DESC")]
   public abstract class Document : Afx.AfxObject
   {

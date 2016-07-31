@@ -83,6 +83,7 @@ namespace Afx
     public const string IdProperty = "Id";
     Guid mId = Guid.NewGuid();
     [DataMember]
+    [Persistent]
     public Guid Id
     {
       get { return mId; }

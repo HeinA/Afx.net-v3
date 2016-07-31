@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace Afx.Collections
 {
   [CollectionDataContract(Namespace = Constants.WcfNamespace, IsReference = true)]
+  [AfxBaseType]
   public class ObjectCollection<TItem> : ObservableCollection<TItem>, IObjectCollection
     where TItem : class, IAfxObject
   {

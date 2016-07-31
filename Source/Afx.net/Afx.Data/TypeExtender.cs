@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Afx.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,31 +10,56 @@ namespace Afx.Data
 {
   public static class TypeExtender
   {
-    public static string AfxTypeName(this Type type)
-    {
-      return string.Format("{0}, {1}", type.FullName, type.Assembly.GetName().Name);
-    }
-
-    public static Type GetGenericSubClass(this Type type, Type targetType)
-    {
-      while (type != null && type != typeof(object))
-      {
-        var cur = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
-        if (targetType == cur)
-        {
-          return type;
-        }
-        type = type.BaseType;
-      }
-      return null;
-    }
   }
 
   public static class TypeInfoExtender
   {
-    public static string AfxTypeName(this TypeInfo type)
+    public static bool IsAfxBaseType(this TypeInfo type)
     {
-      return string.Format("{0}, {1}", type.FullName, type.Assembly.GetName().Name);
+      return type.GetCustomAttribute<AfxBaseTypeAttribute>() != null;
+    }
+
+    public static bool IsAfxBasedType(this TypeInfo type)
+    {
+      return type.IsSubclassOf(typeof(AfxObject)) || type.GetGenericSubClass(typeof(ObjectCollection<>)) != null;
+    }
+
+    public static bool IsAfxBaseType(this Type type)
+    {
+      return IsAfxBaseType(type.GetTypeInfo());
+    }
+
+    public static bool IsAfxBasedType(this Type type)
+    {
+      return IsAfxBasedType(type.GetTypeInfo());
+    }
+
+    public static IEnumerable<PropertyInfo> AllPersistentProperties(this Type type)
+    {
+      if (type.IsAfxBaseType())
+      {
+        var pi = type.GetProperty("Id");
+        if (pi != null) yield return pi;
+
+        pi = type.GetProperty("Owner");
+        if (pi != null) yield return pi;
+
+        pi = type.GetProperty("Reference");
+        if (pi != null) yield return pi;
+      }
+      else
+      {
+        foreach (var pi in type.BaseType.AllPersistentProperties())
+        {
+          yield return pi;
+        }
+
+        foreach (var pi in type.GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null || pi1.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)) != null))
+        {
+          yield return pi;
+        }
+      }
+      yield break;
     }
 
     static List<TypeInfo> mSortedByDataDependencies;

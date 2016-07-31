@@ -1,6 +1,7 @@
 ﻿using Afx;
 using Afx.Collections;
 using Afx.Data;
+using Afx.Data.MsSql;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -43,6 +44,19 @@ namespace TestConsoleApplication
     {
       DataScope.SetDefaultScope(LocalConnectionProvider.ConnectionName);
 
+      try
+      {
+        string sql = new MsSqlQuery<PurchaseOrder>("CustomerName!=@p3 & (Items.Reference.Name contains @p1 | Items.Owner[Test.Business.Document].DocumentNumber ends with @p2)")
+          .AddParameter("@p1", "aaa")
+          .AddParameter("@p2", "sdg")
+          .AddParameter("@p3", "aaa")
+          .GetQuery();
+      }
+      catch
+      {
+        throw;
+      }
+
       using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
       using (new ConnectionScope())
       {
@@ -62,6 +76,8 @@ namespace TestConsoleApplication
       //  GenerateLedgerAccounts();
       //  ts.Complete();
       //}
+
+      Type t = typeof(InventoryItem).AggregateType();
 
       var dc = DataCache<LedgerAccount>.Get();
       //dc.DataCacheUpdated += LedgerAccount_DataCacheUpdated;
