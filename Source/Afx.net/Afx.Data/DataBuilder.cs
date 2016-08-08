@@ -20,10 +20,10 @@ namespace Afx.Data
 
     public static void ValidateSystemObjects()
     {
-      foreach (var obj in Afx.ExtensibilityManager.GetObjects<IAfxObject>())
-      {
-        ObjectRepository.RepositoryInterfaceFor(obj.GetType()).SaveObjectCore(obj, new SaveContext());
-      }
+      //foreach (var obj in Afx.ExtensibilityManager.GetObjects<IAfxObject>())
+      //{
+      //  ObjectRepository.RepositoryInterfaceFor(obj.GetType()).SaveObjectCore(obj, new SaveContext());
+      //}
     }
 
 

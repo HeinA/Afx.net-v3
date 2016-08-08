@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  [Persistent]
-  [AggregateReference]
+  //[Persistent]
+  [AggregateReferenceAttribute]
   public class InventoryItem : AfxObject
   {
     #region string Name

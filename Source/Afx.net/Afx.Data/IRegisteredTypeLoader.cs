@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class)]
-  public class AggregateReference : AggregateAttribute
+  public interface IRegisteredTypeLoader
   {
+    RegisteredType[] LoadTypes();
   }
 }

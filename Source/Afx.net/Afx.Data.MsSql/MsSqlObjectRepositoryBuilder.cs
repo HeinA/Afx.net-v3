@@ -153,7 +153,7 @@ namespace Afx.Data.MsSql
 
     private void WriteSaveObjectCore(IndentedTextWriter tw, Type type)
     {
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
 
       tw.WriteLine("if (context.ShouldProcess(target))");
       tw.WriteLine("{");
@@ -293,7 +293,7 @@ namespace Afx.Data.MsSql
     {
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
 
       tw.Write("string sql = \"INSERT INTO {0} (", type.AfxDbName(), type.AfxDbName());
       tw.Write(string.Join(", ", GetWriteColumns(type, true)));
@@ -325,7 +325,7 @@ namespace Afx.Data.MsSql
 
     void WriteParameters(IndentedTextWriter tw, Type type, bool forInsert)
     {
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
       int count = 1;
@@ -389,7 +389,7 @@ namespace Afx.Data.MsSql
 
     IEnumerable<string> GetWriteColumns(Type type, bool forInsert)
     {
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
       if (type == afxImplementationRoot)
@@ -437,7 +437,7 @@ namespace Afx.Data.MsSql
 
     IEnumerable<string> GetWriteValues(Type type, bool forInsert)
     {
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
       int count = 1;
@@ -487,7 +487,7 @@ namespace Afx.Data.MsSql
     private void WriteReadColumns(IndentedTextWriter tw, Type type)
     {
       List<string> columns = new List<string>();
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       Type associativeType = type.GetGenericSubClass(typeof(AssociativeObject<,>));
       Type ownedType = type.GetGenericSubClass(typeof(AfxObject<>));
 
@@ -519,7 +519,7 @@ namespace Afx.Data.MsSql
 
     private void WriteJoins(IndentedTextWriter tw, Type type)
     {
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       if (type == afxImplementationRoot)
       {
         tw.Write("{0} INNER JOIN [Afx].[RegisteredType] ON {0}.[RegisteredType]=[RegisteredType].[id]", type.AfxDbName());
@@ -541,7 +541,7 @@ namespace Afx.Data.MsSql
     private void WriteFillObject(IndentedTextWriter tw, Type type)
     {
       List<string> columns = new List<string>();
-      Type afxImplementationRoot = type.GetAfxImplementationRoot();
+      Type afxImplementationRoot = type.AfxImplementationBaseType();
       Type afxRoot = afxImplementationRoot.BaseType;
 
       if (type == afxImplementationRoot)
@@ -655,7 +655,7 @@ namespace Afx.Data.MsSql
     void WriteFillObjectObjectCollection(IndentedTextWriter tw, Type type, PropertyInfo pi, Type collectionType)
     {
       Type itemType = collectionType.GetGenericArguments()[0];
-      Type itemOwnerType = itemType.GetAfxImplementationRoot().BaseType.GetGenericArguments()[0];
+      Type itemOwnerType = itemType.AfxImplementationBaseType().BaseType.GetGenericArguments()[0];
 
       if (itemOwnerType == type) //Recursive Ownership
       {

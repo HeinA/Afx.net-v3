@@ -95,7 +95,7 @@ namespace Afx
     #region bool IsDirty
 
     public const string IsDirtyProperty = nameof(IsDirty);
-    bool mIsDirty = true;
+    bool mIsDirty = false;
     [DataMember]
     public bool IsDirty
     {

@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  [Persistent]
-  [CompositeReference]
+  //[Persistent]
+  //[CompositeReference]
   public class PurchaseOrderItem : AssociativeObject<PurchaseOrder, InventoryItem>
   {
   }

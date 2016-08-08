@@ -17,7 +17,14 @@ namespace Afx.Data
     internal DataCache(DataScopeCache dataScopeCache)
       : base(dataScopeCache)
     {
-      Refresh();
+      try
+      {
+        Refresh();
+      }
+      catch
+      {
+        throw;
+      }
     }
 
     public override void Refresh()
@@ -29,7 +36,7 @@ namespace Afx.Data
       ObjectCollection<T> objects = null;
       using (new ConnectionScope())
       {
-        objects = ObjectRepository<T>.Get().LoadObjects();
+        objects = new ObjectCollection<T>(DataScope.GetCollectionRepository<T>().LoadCollection());
       }
 
       lock (DataScopeCache.Lock)
@@ -86,25 +93,6 @@ namespace Afx.Data
 
     internal DataScopeCache DataScopeCache { get; private set; }
 
-    //internal static void InitializeForDataScope()
-    //{
-    //  DataScopeCache dsc = GetDataScopeCache();
-    //  foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
-    //  {
-    //    if (dsc.GetDataCache(type) != null) continue;
-
-    //    try
-    //    {
-    //      Type type1 = typeof(DataCache<>).MakeGenericType(type);
-    //      ConstructorInfo ci = type1.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(DataScopeCache) }, null);
-    //      ci.Invoke(new object[] { dsc });
-    //    }
-    //    catch (TargetInvocationException ex)
-    //    {
-    //      throw ex.InnerException;
-    //    }
-    //  }
-    //}
 
     static Dictionary<string, DataScopeCache> mScopeDictionary = new Dictionary<string, DataScopeCache>();
 

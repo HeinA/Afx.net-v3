@@ -6,18 +6,18 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public abstract class DataException : Exception
+  public class QuerySyntaxException : DataException
   {
-    protected DataException()
+    public QuerySyntaxException()
     {
     }
 
-    protected DataException(string message)
+    public QuerySyntaxException(string message)
       : base(message)
     {
     }
 
-    protected DataException(string message, Exception innerException)
+    public QuerySyntaxException(string message, Exception innerException)
       : base (message, innerException)
     {
     }

@@ -5,76 +5,58 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace Afx.Data.MsSql
 {
-  public class MsSqlQuery<T>
+  public class MsSqlAggregateObjectQuery<T> : AggregateObjectQuery<T>
+    where T : class, IAfxObject
   {
     Stack<PropertyInfo> mPropertyStack = new Stack<PropertyInfo>();
     List<PropertyInfo> mJoinedProperties = new List<PropertyInfo>();
     List<string> mJoins = new List<string>();
-    List<QueryParameter> mParameters = new List<QueryParameter>();
 
     #region Constructors
 
-    public MsSqlQuery()
+    public MsSqlAggregateObjectQuery(AggregateObjectRepository<T> store)
+      : base(store)
     {
     }
 
-    public MsSqlQuery(string conditions)
+    public MsSqlAggregateObjectQuery(AggregateObjectRepository<T> store, string conditions)
+      : base(store, conditions)
     {
-      Conditions = conditions;
     }
 
     #endregion 
 
-    #region string Conditions
-
-    public const string ConditionsProperty = "Conditions";
-    string mConditions;
-    public string Conditions
-    {
-      get { return mConditions; }
-      set { mConditions = value; }
-    }
-
-    #endregion
-
-    #region AddParameter()
-
-    public MsSqlQuery<T> AddParameter(string name, object value)
-    {
-      name = name.Trim();
-      if (!name.StartsWith("@")) throw new InvalidOperationException(Properties.Resources.InvalidParameterName);
-      mParameters.Add(new QueryParameter() { Name = name, Value = value });
-      return this;
-    }
-
-    #endregion
-
     #region GetQuery()
 
-    public string GetQuery()
+    protected override string GetQuery()
     {
       mPropertyStack = new Stack<PropertyInfo>();
       mJoinedProperties = new List<PropertyInfo>();
       mJoins = new List<string>();
 
       string where = GetWhereClause(Conditions);
-      string sql = string.Format("SELECT [\\].[id] FROM (SELECT {0} FROM {1}) AS [\\]{2} WHERE {3}", string.Join(", ", typeof(T).GetObjectColumns()), string.Join(" INNER JOIN ", typeof(T).GetSqlSelectJoins()), mJoins.Count == 0 ? string.Empty : string.Format(" INNER JOIN {0}", string.Join(" INNER JOIN ", mJoins)), where);
+      string sql = string.Format("SELECT [\\].[id] INTO #{{0}} FROM (SELECT {0} FROM {1}) AS [\\]{2} WHERE {3}", string.Join(", ", typeof(T).AfxQueryColumns()), string.Join(" INNER JOIN ", typeof(T).AfxBaseJoins()), mJoins.Count == 0 ? string.Empty : string.Format(" INNER JOIN {0}", string.Join(" INNER JOIN ", mJoins)), where);
       return sql;
     }
 
     #endregion
 
+    #region AppendParameters()
 
-    #region class QueryParameter
-
-    class QueryParameter
+    protected override void AppendParameters(IDbCommand cmd)
     {
-      public string Name { get; set; }
-      public object Value { get; set; }
+      SqlCommand sqlcmd = (SqlCommand)cmd;
+      foreach (var p in Parameters)
+      {
+        sqlcmd.Parameters.AddWithValue(p.Name, p.Value);
+      }
     }
 
     #endregion
@@ -112,7 +94,7 @@ namespace Afx.Data.MsSql
 
             default:
               bool processed = false;
-              foreach (var pi in currentType.AllPersistentProperties())
+              foreach (var pi in currentType.AfxPersistentProperties())
               {
                 if (index + pi.Name.Length >= text.Length) continue;
                 if (pi.Name == text.Substring(index, pi.Name.Length))
@@ -121,7 +103,7 @@ namespace Afx.Data.MsSql
                   processed = true;
                   index += pi.Name.Length;
 
-                  if (pi.PropertyType.IsAfxBasedType())
+                  if (pi.PropertyType.AfxIsAfxType())
                   {
                     Type propertyType = null;
                     if (text[index] == '[') propertyType = GetCastedType(text, ref index); // Property is casted
@@ -129,7 +111,7 @@ namespace Afx.Data.MsSql
                   }
                   else
                   {
-                    AddCondition(sw, string.Format("[\\{0}].[{1}]", GetPath(), pi.Name), text, ref index);
+                    AddCondition(sw, string.Format("[\\{0}].[{1}]", GetPath(), pi.Name), pi.PropertyType, text, ref index);
                     currentType = typeof(T);
                     mPropertyStack.Clear();
                   }
@@ -139,7 +121,7 @@ namespace Afx.Data.MsSql
               }
               if (processed) continue;
 
-              throw new InvalidOperationException(string.Format(Properties.Resources.InvalidObjectProperty, index + 40 > text.Length ? text.Substring(index, text.Length - index) : text.Substring(index, 40))); //TODO
+              throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidObjectProperty, currentType.FullName, index + 40 > text.Length ? text.Substring(index, text.Length - index) : text.Substring(index, 40)));
           }
         }
 
@@ -156,15 +138,18 @@ namespace Afx.Data.MsSql
       mPropertyStack.Push(pi);
 
       string targetPropertyName = "id";
+      string sourcePropertyName = "id";
+
       //Find the right join Type
       Type associativeCollection = pi.PropertyType.GetGenericSubClass(typeof(AssociativeCollection<,>));
       if (associativeCollection != null)
       {
         //Join Associative Collections on the Associative Type
-        if (joinType != null && !(joinType.IsAssignableFrom(associativeCollection.GetGenericArguments()[1]) || associativeCollection.GetGenericArguments()[1].IsAssignableFrom(joinType))) throw new InvalidCastException(string.Format(Properties.Resources.InvalidCast, associativeCollection.GetGenericArguments()[1], joinType));
+        var associativeType = associativeCollection.GetGenericArguments()[1];
+        if (joinType != null && !(joinType.IsAssignableFrom(associativeType) || associativeType.IsAssignableFrom(joinType))) throw new InvalidCastException(string.Format(Properties.Resources.InvalidCast, associativeType, joinType));
         if (joinType == null)
         {
-          joinType = associativeCollection.GetGenericArguments()[1];
+          joinType = associativeType;
           targetPropertyName = "Owner";
         }
       }
@@ -174,7 +159,8 @@ namespace Afx.Data.MsSql
         Type objectCollection = pi.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>));
         if (objectCollection != null)
         {
-          if (joinType != null && !(joinType.IsAssignableFrom(objectCollection.GetGenericArguments()[0]) || objectCollection.GetGenericArguments()[0].IsAssignableFrom(joinType))) throw new InvalidCastException(string.Format(Properties.Resources.InvalidCast, objectCollection.GetGenericArguments()[0], joinType));
+          var itemType = objectCollection.GetGenericArguments()[0];
+          if (joinType != null && !(joinType.IsAssignableFrom(itemType) || itemType.IsAssignableFrom(joinType))) throw new InvalidCastException(string.Format(Properties.Resources.InvalidCast, itemType, joinType));
           if (joinType == null)
           {
             joinType = objectCollection.GetGenericArguments()[0];
@@ -188,14 +174,15 @@ namespace Afx.Data.MsSql
           if (joinType == null)
           {
             joinType = pi.PropertyType;
+            sourcePropertyName = pi.Name;
           }
         }
       }
 
       if (mJoinedProperties.Contains(pi)) return joinType;
 
-      string innerSql = string.Format("SELECT {0} FROM {1}", string.Join(", ", joinType.GetObjectColumns()), string.Join(" INNER JOIN ", joinType.GetSqlSelectJoins()));
-      mJoins.Add(string.Format("({0}) AS [\\{1}] ON [\\{1}].[{3}]=[\\{2}].[id]", innerSql, GetFullName(pi.Name), GetPreviousPath(), targetPropertyName));
+      string innerSql = string.Format("SELECT {0} FROM {1}", string.Join(", ", joinType.AfxQueryColumns()), string.Join(" INNER JOIN ", joinType.AfxBaseJoins()));
+      mJoins.Add(string.Format("({0}) AS [\\{1}] ON [\\{1}].[{3}]=[\\{2}].[{4}]", innerSql, GetFullName(pi.Name), GetPreviousPath(), targetPropertyName, sourcePropertyName));
       mJoinedProperties.Add(pi);
       return joinType;
     }
@@ -233,7 +220,7 @@ namespace Afx.Data.MsSql
           return type;
         }
       }
-      throw new InvalidOperationException(string.Format(Properties.Resources.CouldNotResolveType, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+      throw new QuerySyntaxException(string.Format(Properties.Resources.CouldNotResolveType, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
     }
 
     int GetCastEndOffset(string text, int startingIndex)
@@ -242,30 +229,37 @@ namespace Afx.Data.MsSql
       {
         if (text[i] == ']') return i;
       }
-      throw new InvalidOperationException(string.Format(Properties.Resources.CouldNotResolveType, startingIndex + 40 > text.Length ? text.Substring(startingIndex, text.Length - startingIndex) : text.Substring(startingIndex, 40)));
+      throw new QuerySyntaxException(string.Format(Properties.Resources.CouldNotResolveType, startingIndex + 40 > text.Length ? text.Substring(startingIndex, text.Length - startingIndex) : text.Substring(startingIndex, 40)));
     }
 
     #endregion
 
     #region AddCondition()
 
-    void AddCondition(StringWriter sw, string fullColumnName, string text, ref int index)
+    void AddCondition(StringWriter sw, string fullColumnName, Type propertyType, string text, ref int index)
     {
       int originalIndex = index;
       string parameterName = null;
       string condition = GetCondition(text, ref index).Trim();
       QueryParameter qp = null;
 
+      if (condition.ToUpperInvariant().StartsWith("DATEONLY"))
+      {
+        if (!typeof(Nullable<DateTime>).IsAssignableFrom(propertyType)) throw new QuerySyntaxException(string.Format(Properties.Resources.DateOnlyInvalidType, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+        condition = condition.Substring(8).Trim();
+        fullColumnName = string.Format("CAST({0} AS DATE)", fullColumnName);
+      }
+
       if (condition.StartsWith(">="))
       {
         parameterName = condition.Substring(2).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
         sw.Write("{0}{1}{2}", fullColumnName, ">=", parameterName);
       }
       else if (condition.StartsWith("<="))
       {
         parameterName = condition.Substring(2).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
         sw.Write("{0}{1}{2}", fullColumnName, "<=", parameterName);
       }
       else if (condition.StartsWith("!="))
@@ -278,20 +272,20 @@ namespace Afx.Data.MsSql
         }
         else
         {
-          qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+          qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
           sw.Write("{0}{1}{2}", fullColumnName, "<>", parameterName);
         }
       }
       else if (condition.StartsWith(">"))
       {
         parameterName = condition.Substring(1).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
         sw.Write("{0}{1}{2}", fullColumnName, ">", parameterName);
       }
       else if (condition.StartsWith("<"))
       {
         parameterName = condition.Substring(1).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
         sw.Write("{0}{1}{2}", fullColumnName, "<", parameterName);
       }
       else if (condition.StartsWith("="))
@@ -304,46 +298,75 @@ namespace Afx.Data.MsSql
         }
         else
         {
-          qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+          qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
           sw.Write("{0}{1}{2}", fullColumnName, "=", parameterName);
         }
       }
       else if (condition.ToUpperInvariant().StartsWith("CONTAINS"))
       {
+        if (!propertyType.Equals(typeof(string))) throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidStringType, "CONTAINS", originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
         parameterName = condition.Substring(8).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
 
         string value = qp.Value as string;
-        if (value == null) throw new InvalidOperationException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "CONTAINS"));
+        if (value == null) throw new QuerySyntaxException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "CONTAINS"));
         qp.Value = string.Format("%{0}%", value);
 
         sw.Write("{0}{1}{2}", fullColumnName, " LIKE ", parameterName);
       }
       else if (condition.ToUpperInvariant().StartsWith("STARTS WITH"))
       {
+        if (!propertyType.Equals(typeof(string))) throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidStringType, "STARTS WITH", originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
         parameterName = condition.Substring(11).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
 
         string value = qp.Value as string;
-        if (value == null) throw new InvalidOperationException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "STARTS WITH"));
+        if (value == null) throw new QuerySyntaxException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "STARTS WITH"));
         qp.Value = string.Format("{0}%", value);
 
         sw.Write("{0}{1}{2}", fullColumnName, " LIKE ", parameterName);
       }
       else if (condition.ToUpperInvariant().StartsWith("ENDS WITH"))
       {
+        if (!propertyType.Equals(typeof(string))) throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidStringType, "ENDS WITH", originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
         parameterName = condition.Substring(9).Trim();
-        qp = mParameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
+        qp = Parameters.FirstOrDefault(qp1 => qp1.Name.Equals(parameterName));
 
         string value = qp.Value as string;
-        if (value == null) throw new InvalidOperationException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "ENDS WITH"));
+        if (value == null) throw new QuerySyntaxException(string.Format(Properties.Resources.OperatorOnlyValidOnStrings, "ENDS WITH"));
         qp.Value = string.Format("%{0}", value);
 
         sw.Write("{0}{1}{2}", fullColumnName, " LIKE ", parameterName);
       }
-      else throw new InvalidOperationException(string.Format(Properties.Resources.InvalidOperator, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+      else if (condition.ToUpperInvariant().StartsWith("WITHIN"))
+      {
+        parameterName = condition.Substring(7).Trim();
+        var parameters = Regex.Split(parameterName, "AND", RegexOptions.IgnoreCase);
+        if (parameters.Length != 2) throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidWithinParameterCount, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+        string startParameter = parameters[0].Trim();
+        string endParameter = parameters[1].Trim();
+        qp = Parameters.FirstOrDefault(qp2 => qp2.Name.Equals(endParameter.Trim()));
+        var qp1 = Parameters.FirstOrDefault(qp2 => qp2.Name.Equals(startParameter.Trim()));
+        if (qp1 == null) throw new QuerySyntaxException(string.Format(Properties.Resources.ParameterNotProvided, parameterName));
 
-      if (qp == null) throw new InvalidOperationException(string.Format(Properties.Resources.ParameterNotProvided, parameterName));
+        sw.Write("({0}{1}{2} AND {0}{3}{4})", fullColumnName, ">=", startParameter, "<=", endParameter);
+      }
+      else if (condition.ToUpperInvariant().StartsWith("BETWEEN"))
+      {
+        parameterName = condition.Substring(7).Trim();
+        var parameters = Regex.Split(parameterName, "AND", RegexOptions.IgnoreCase);
+        if (parameters.Length != 2) throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidBetweenParameterCount, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+        string startParameter = parameters[0].Trim();
+        string endParameter = parameters[1].Trim();
+        qp = Parameters.FirstOrDefault(qp2 => qp2.Name.Equals(endParameter.Trim()));
+        var qp1 = Parameters.FirstOrDefault(qp2 => qp2.Name.Equals(startParameter.Trim()));
+        if (qp1 == null) throw new QuerySyntaxException(string.Format(Properties.Resources.ParameterNotProvided, parameterName));
+
+        sw.Write("({0}{1}{2} AND {0}{3}{4})", fullColumnName, ">", startParameter, "<", endParameter);
+      }
+      else throw new QuerySyntaxException(string.Format(Properties.Resources.InvalidOperator, originalIndex + 40 > text.Length ? text.Substring(originalIndex, text.Length - originalIndex) : text.Substring(originalIndex, 40)));
+
+      if (qp == null) throw new QuerySyntaxException(string.Format(Properties.Resources.ParameterNotProvided, parameterName));
     }
 
     string GetCondition(string text, ref int index)

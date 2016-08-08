@@ -15,7 +15,7 @@ namespace Afx.Data
     {
       DataScope = Afx.Data.DataScope.CurrentScopeName;
 
-      foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<DataCacheAttribute>() != null))
+      foreach (var type in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder().Where(t => t.GetCustomAttribute<AggregateCollectionAttribute>() != null))
       {
         //if (GetDataCache(type) != null) continue;
 

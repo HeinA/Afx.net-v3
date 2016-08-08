@@ -79,6 +79,15 @@ namespace Afx.Data.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Parameter name should start with an &apos;@&apos;.
+        /// </summary>
+        public static string InvalidParameterName {
+            get {
+                return ResourceManager.GetString("InvalidParameterName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to LoadObject did not return exactly one row.
         /// </summary>
         public static string LoadOneRow {

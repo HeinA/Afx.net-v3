@@ -158,7 +158,7 @@ namespace Afx.Data
       get
       {
         if (mImplementationRoot != null) return mImplementationRoot;
-        mImplementationRoot = typeof(T).GetAfxImplementationRoot();
+        mImplementationRoot = typeof(T).AfxImplementationBaseType();
         Guard.ThrowOperationExceptionIfNull(mImplementationRoot, Properties.Resources.NotAnAfxType, typeof(T));
         return mImplementationRoot;
       }

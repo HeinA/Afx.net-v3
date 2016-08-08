@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  [Persistent]
+  //[Persistent]
   public class Role : Afx.AfxObject
   {
     #region Constructors

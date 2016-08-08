@@ -54,9 +54,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataTypes.cs" />
+    <Compile Include="DocumentDataConverter.cs" />
+    <Compile Include="InventoryItemDataConverter.cs" />
+    <Compile Include="LedgerAccountDataConverter.cs" />
+    <Compile Include="LedgerAccountStore.cs" />
     <Compile Include="LocalConnectionProvider.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PurchaseOrderStore.cs" />
+    <Compile Include="PurchaseOrderDataConverter.cs" />
+    <Compile Include="PurchaseOrderItemDataConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -70,6 +77,10 @@
     <ProjectReference Include="..\..\Afx.net\Afx.Data\Afx.Data.csproj">
       <Project>{5c12bed4-4d3f-4a25-b9e5-970e1781a38e}</Project>
       <Name>Afx.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Afx.net\Afx.Extensibility\Afx.Extensibility.csproj">
+      <Project>{763ef435-e0ea-4203-80f6-03a81dcd351f}</Project>
+      <Name>Afx.Extensibility</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Afx.net\Afx\Afx.csproj">
       <Project>{80818477-c2ea-4773-b1ea-fbabca6748bb}</Project>

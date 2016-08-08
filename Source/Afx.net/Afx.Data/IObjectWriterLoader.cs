@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class)]
-  public class AggregateCollection : AggregateAttribute
+  public interface IObjectWriterLoader
   {
+    ObjectWriter[] LoadObjectWriters();
   }
 }

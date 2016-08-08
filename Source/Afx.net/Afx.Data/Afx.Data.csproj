@@ -46,6 +46,7 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -54,8 +55,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AggregateCollectionRepository.cs" />
     <Compile Include="ConnectionScope.cs" />
-    <Compile Include="RepositoryBuilder.cs" />
+    <Compile Include="AggregateObjectQuery.cs" />
+    <Compile Include="AggregateObjectRepository.cs" />
+    <Compile Include="DatabaseWriteType.cs" />
+    <Compile Include="IRegisteredTypeLoader.cs" />
+    <Compile Include="ObjectDataRow.cs" />
+    <Compile Include="ObjectDataRowCollection.cs" />
+    <Compile Include="ObjectDataConverter.cs" />
+    <Compile Include="QuerySyntaxException.cs" />
+    <Compile Include="RegisteredType.cs" />
     <Compile Include="DataBuilder.cs" />
     <Compile Include="DataCache.cs" />
     <Compile Include="DataException.cs" />
@@ -65,18 +75,17 @@
     <Compile Include="ICommandProvider.cs" />
     <Compile Include="IDataBuilder.cs" />
     <Compile Include="IConnectionProvider.cs" />
-    <Compile Include="IObjectRepository.cs" />
-    <Compile Include="IObjectRepositoryBuilder.cs" />
     <Compile Include="LoadContext.cs" />
-    <Compile Include="ObjectRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="RepositoryFactory.cs" />
     <Compile Include="SaveContext.cs" />
-    <Compile Include="TypeExtender.cs" />
+    <Compile Include="DataExtensions.cs" />
+    <Compile Include="SelectionType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Afx.Extensibility\Afx.Extensibility.csproj">

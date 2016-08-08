@@ -45,6 +45,7 @@
     <Compile Include="Administrator.cs" />
     <Compile Include="Document.cs" />
     <Compile Include="InventoryItem.cs" />
+    <Compile Include="Invoice.cs" />
     <Compile Include="LedgerAccount.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PurchaseOrder.cs" />

@@ -60,11 +60,14 @@
     <Compile Include="IDbText.cs" />
     <Compile Include="IDefaultDbText.cs" />
     <Compile Include="ITableCreated.cs" />
+    <Compile Include="MsSqlAggregateCollectionRepository.cs" />
     <Compile Include="MsSqlDataBuilder.cs" />
     <Compile Include="MsSqlCommandProvider.cs" />
-    <Compile Include="MsSqlObjectRepository.cs" />
-    <Compile Include="MsSqlObjectRepositoryBuilder.cs" />
-    <Compile Include="MsSqlQuery.cs" />
+    <Compile Include="MsSqlAggregateObjectQuery.cs" />
+    <Compile Include="MsSqlAggregateObjectRepository.cs" />
+    <Compile Include="MsSqlObjectDataConverter.cs" />
+    <Compile Include="MsSqlRegisteredTypeLoader.cs" />
+    <Compile Include="MsSqlRepositoryFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -73,7 +76,7 @@
     </Compile>
     <Compile Include="PropertyInfoExtender.cs" />
     <Compile Include="PropertyPath.cs" />
-    <Compile Include="TypeExtender.cs" />
+    <Compile Include="MsSqlExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Afx.Data\Afx.Data.csproj">

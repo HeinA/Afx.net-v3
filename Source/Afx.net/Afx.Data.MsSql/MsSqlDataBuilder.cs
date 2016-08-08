@@ -313,7 +313,7 @@ namespace Afx.Data.MsSql
         }
 
         if (piOwner != null && piOwner.PropertyType.Equals(t)) ValidateCircularOwnerTrigger(t);
-        if (piReference != null && t.GetCustomAttribute<CompositeReferenceAttribute>(true) != null) ValidateOwnedReferenceTriggers(t, piReference.PropertyType);
+        if (piReference != null && piReference.PropertyType.GetCustomAttribute<AggregateReferenceAttribute>(true) != null) ValidateOwnedReferenceTriggers(t, piReference.PropertyType);
 
         #region Drop Old Columns
 
@@ -338,7 +338,7 @@ namespace Afx.Data.MsSql
     {
       foreach (var t in PersistentTypes)
       {
-        if (t.GetAfxImplementationRoot().Equals(t))
+        if (t.AfxImplementationBaseType().Equals(t))
         {
           if (t.GetGenericSubClass(typeof(AfxObject<>)) != null || t.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
           {

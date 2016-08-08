@@ -123,6 +123,9 @@
   <data name="CouldNotDetermineType" xml:space="preserve">
     <value>Could not determine the object type</value>
   </data>
+  <data name="InvalidParameterName" xml:space="preserve">
+    <value>Parameter name should start with an '@'</value>
+  </data>
   <data name="LoadOneRow" xml:space="preserve">
     <value>LoadObject did not return exactly one row</value>
   </data>

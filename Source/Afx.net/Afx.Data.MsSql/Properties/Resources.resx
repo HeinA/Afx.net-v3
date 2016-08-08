@@ -117,20 +117,38 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AggregateCollectionRepositoryNotFound" xml:space="preserve">
+    <value>Could not find an aggregate collection repository for object of type '{0}'</value>
+  </data>
+  <data name="AggregateObjectRepositoryNotFound" xml:space="preserve">
+    <value>Could not find an aggregate object repository for object of type '{0}'</value>
+  </data>
   <data name="CouldNotResolveType" xml:space="preserve">
-    <value>Could not resolve the Type near '{0}'</value>
+    <value>Could not resolve the type near '{0}'</value>
+  </data>
+  <data name="DateOnlyInvalidType" xml:space="preserve">
+    <value>Operator 'DATEONLY' is only applicable on DateTime properties near '{0}'</value>
+  </data>
+  <data name="InvalidBetweenParameterCount" xml:space="preserve">
+    <value>Operator 'BETWEEN' expects 2 parameters seperated with and 'AND' near '{0}'</value>
   </data>
   <data name="InvalidCast" xml:space="preserve">
     <value>Type '{0}' can not be casted to type '{1}'</value>
   </data>
   <data name="InvalidObjectProperty" xml:space="preserve">
-    <value>Invalid Object Property near '{0}'</value>
+    <value>Invalid Property for object of type '{0}' near '{1}'</value>
   </data>
   <data name="InvalidOperator" xml:space="preserve">
-    <value>Invalid Operator near '{0}'</value>
+    <value>Invalid operator near '{0}'</value>
   </data>
-  <data name="InvalidParameterName" xml:space="preserve">
-    <value>Parameter name should start with an '@'</value>
+  <data name="InvalidStringType" xml:space="preserve">
+    <value>Operator '{0}' is only applicable on String properties near '{1}'</value>
+  </data>
+  <data name="InvalidWithinParameterCount" xml:space="preserve">
+    <value>Operator 'WITHIN' expects 2 parameters seperated with and 'AND' near '{0}'</value>
+  </data>
+  <data name="ObjectDataConverterNotFound" xml:space="preserve">
+    <value>Could not find an object data converter for object of type '{0}'</value>
   </data>
   <data name="OperatorOnlyValidOnStrings" xml:space="preserve">
     <value>Operator '{0}' expects a string value</value>
@@ -139,6 +157,6 @@
     <value>Parameter '{0}' has not been provided</value>
   </data>
   <data name="RepositoryCompilationErrors" xml:space="preserve">
-    <value>The Repository compilation resulted in errors</value>
+    <value>The repository compilation resulted in errors</value>
   </data>
 </root>

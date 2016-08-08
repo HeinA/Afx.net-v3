@@ -27,7 +27,7 @@ namespace Afx
 
           foreach (var t in a.DefinedTypes)
           {
-            if (t.IsSubclassOf(typeof(Afx.AfxObject))) mBusinessObjectTypes.Add(t);
+            if (t.IsSubclassOf(typeof(AfxObject))) mBusinessObjectTypes.Add(t);
           }
         }
       }
@@ -45,6 +45,23 @@ namespace Afx
           yield return t;
         }
       }
+    }
+
+    static List<Assembly> mAfxAssemblies = new List<Assembly>();
+    public static Type[] GetImplementationsOfGenericType(Type generic)
+    {
+      List<Type> types = new List<Type>();
+      foreach (var assembly in mAfxAssemblies)
+      {
+        foreach (var t in assembly.DefinedTypes)
+        {
+          if (t.GetGenericSubClass(generic.UnderlyingSystemType) != null)
+          {
+            types.Add(t.UnderlyingSystemType);
+          }
+        }
+      }
+      return types.ToArray();
     }
 
     static CompositionContainer CompositionContainer { get; set; }
@@ -66,6 +83,11 @@ namespace Afx
       return CompositionContainer.GetExportedValues<T>();
     }
 
+    public static IEnumerable<T> GetObjects<T>(string contractName)
+    {
+      return CompositionContainer.GetExportedValues<T>(contractName);
+    }
+
     public static T GetObject<T>(string contractName)
     {
       return CompositionContainer.GetExportedValueOrDefault<T>(contractName);
@@ -74,7 +96,8 @@ namespace Afx
     #region void PreLoadDeployedAssemblies()
 
     static bool mAssembliesLoaded = false;
-    static void PreLoadDeployedAssemblies()
+
+    public static void PreLoadDeployedAssemblies()
     {
       if (mAssembliesLoaded) return;
       foreach (var path in GetBinFolders())
@@ -99,7 +122,7 @@ namespace Afx
       return toReturn;
     }
 
-    static void PreLoadAssembliesFromPath(string p)
+    public static void PreLoadAssembliesFromPath(string p)
     {
       FileInfo[] files = null;
       files = new DirectoryInfo(p).GetFiles("*.dll", SearchOption.AllDirectories);

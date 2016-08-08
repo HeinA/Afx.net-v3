@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class)]
-  public class AggregateObject : AggregateAttribute
+  public enum DatabaseWriteType
   {
+    None,
+    Insert,
+    Update
   }
 }

@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Property)] //AttributeTargets.Class | 
-  public class DataCacheAttribute : Attribute
+  public enum SelectionType
   {
+    All
+    , Id
+    , Query
   }
 }

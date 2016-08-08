@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  [Persistent]
-  [DataCache]
+  //[Persistent]
+  [AggregateCollection]
   [OrderBy("Name")]
   public class LedgerAccount : Afx.AfxObject<LedgerAccount>
   {

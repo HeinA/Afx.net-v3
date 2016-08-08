@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property | AttributeTargets.Interface)]
+  [AttributeUsage(AttributeTargets.Property)] //AttributeTargets.Class |  | AttributeTargets.Interface
   public class PersistentAttribute : Attribute
   {
     //public string Table { get; set; }

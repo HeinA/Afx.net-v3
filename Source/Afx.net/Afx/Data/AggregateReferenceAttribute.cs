@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Property)] //AttributeTargets.Class | 
-  public class DataCacheAttribute : Attribute
+  [AttributeUsage(AttributeTargets.Class)]
+  public class AggregateReferenceAttribute : AggregateAttribute
   {
   }
 }

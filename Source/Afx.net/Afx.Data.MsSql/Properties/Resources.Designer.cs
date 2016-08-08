@@ -61,11 +61,47 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Could not resolve the Type near &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Could not find an aggregate collection repository for object of type &apos;{0}&apos;.
+        /// </summary>
+        internal static string AggregateCollectionRepositoryNotFound {
+            get {
+                return ResourceManager.GetString("AggregateCollectionRepositoryNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not find an aggregate object repository for object of type &apos;{0}&apos;.
+        /// </summary>
+        internal static string AggregateObjectRepositoryNotFound {
+            get {
+                return ResourceManager.GetString("AggregateObjectRepositoryNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not resolve the type near &apos;{0}&apos;.
         /// </summary>
         internal static string CouldNotResolveType {
             get {
                 return ResourceManager.GetString("CouldNotResolveType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Operator &apos;DATEONLY&apos; is only applicable on DateTime properties near &apos;{0}&apos;.
+        /// </summary>
+        internal static string DateOnlyInvalidType {
+            get {
+                return ResourceManager.GetString("DateOnlyInvalidType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Operator &apos;BETWEEN&apos; expects 2 parameters seperated with and &apos;AND&apos; near &apos;{0}&apos;.
+        /// </summary>
+        internal static string InvalidBetweenParameterCount {
+            get {
+                return ResourceManager.GetString("InvalidBetweenParameterCount", resourceCulture);
             }
         }
         
@@ -79,7 +115,7 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invalid Object Property near &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Invalid Property for object of type &apos;{0}&apos; near &apos;{1}&apos;.
         /// </summary>
         internal static string InvalidObjectProperty {
             get {
@@ -88,7 +124,7 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invalid Operator near &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Invalid operator near &apos;{0}&apos;.
         /// </summary>
         internal static string InvalidOperator {
             get {
@@ -97,11 +133,29 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Parameter name should start with an &apos;@&apos;.
+        ///   Looks up a localized string similar to Operator &apos;{0}&apos; is only applicable on String properties near &apos;{1}&apos;.
         /// </summary>
-        internal static string InvalidParameterName {
+        internal static string InvalidStringType {
             get {
-                return ResourceManager.GetString("InvalidParameterName", resourceCulture);
+                return ResourceManager.GetString("InvalidStringType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Operator &apos;WITHIN&apos; expects 2 parameters seperated with and &apos;AND&apos; near &apos;{0}&apos;.
+        /// </summary>
+        internal static string InvalidWithinParameterCount {
+            get {
+                return ResourceManager.GetString("InvalidWithinParameterCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not find an object data converter for object of type &apos;{0}&apos;.
+        /// </summary>
+        internal static string ObjectDataConverterNotFound {
+            get {
+                return ResourceManager.GetString("ObjectDataConverterNotFound", resourceCulture);
             }
         }
         
@@ -124,7 +178,7 @@ namespace Afx.Data.MsSql.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The Repository compilation resulted in errors.
+        ///   Looks up a localized string similar to The repository compilation resulted in errors.
         /// </summary>
         internal static string RepositoryCompilationErrors {
             get {

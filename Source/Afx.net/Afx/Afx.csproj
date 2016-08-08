@@ -54,18 +54,16 @@
     <Compile Include="Collections\OrderedDictionary.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Data\AggregateAttribute.cs" />
-    <Compile Include="Data\AggregateCollection.cs" />
-    <Compile Include="Data\AggregateObject.cs" />
-    <Compile Include="Data\AggregateReference.cs" />
-    <Compile Include="Data\CompositeReferenceAttribute.cs" />
+    <Compile Include="Data\AggregateCollectionAttribute.cs" />
+    <Compile Include="Data\AggregateObjectAttribute.cs" />
+    <Compile Include="Data\AggregateReferenceAttribute.cs" />
     <Compile Include="Data\DataCacheAttribute.cs" />
     <Compile Include="Data\DefaultsToNullAttribute.cs" />
-    <Compile Include="Data\PersistentAttribute.cs" />
     <Compile Include="AfxAssemblyAttribute.cs" />
     <Compile Include="AfxBaseTypeAttribute.cs" />
+    <Compile Include="Data\PersistentAttribute.cs" />
     <Compile Include="Data\SchemaAttribute.cs" />
     <Compile Include="Data\OrderByAttribute.cs" />
-    <Compile Include="Data\TypeExtensions.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IAfxObject.cs" />
     <Compile Include="IAssociativeObject.cs" />
@@ -77,8 +75,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="StateSuppressor.cs" />
-    <Compile Include="StringExtensions.cs" />
-    <Compile Include="TypeExtensions.cs" />
+    <Compile Include="Extensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Afx.pfx" />
