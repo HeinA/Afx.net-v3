@@ -16,10 +16,16 @@ namespace Afx.Data
   public abstract class AggregateCollectionRepository<T> : AggregateCollectionRepository
     where T : class, IAfxObject
   {
+    #region Type TargetType
+
     public override Type TargetType
     {
       get { return typeof(T); }
     }
+
+    #endregion
+
+    #region LoadCollection()
 
     public ObjectCollection<T> LoadCollection()
     {
@@ -31,6 +37,10 @@ namespace Afx.Data
         return new ObjectCollection<T>(GetObjects(new ObjectDataRowCollection(cmd.AfxGetObjectData())).ToArray());
       }
     }
+
+    #endregion
+
+    #region Save()
 
     public void Save(ObjectCollection<T> targets)
     {
@@ -47,6 +57,11 @@ namespace Afx.Data
       CollectionSaved?.Invoke(this, EventArgs.Empty);
     }
 
+    #endregion
+
+
+    #region GetObjectDataConverter()
+
     protected ObjectDataConverter<T1> GetObjectDataConverter<T1>()
       where T1 : class, IAfxObject
     {
@@ -57,6 +72,8 @@ namespace Afx.Data
     {
       return DataScope.CurrentScope.RepositoryFactory.GetObjectDataConverter(objectType);
     }
+
+    #endregion
 
     protected abstract IEnumerable<T> GetObjects(ObjectDataRowCollection rows);
     protected abstract string AggregateSelectsForObjects { get; }

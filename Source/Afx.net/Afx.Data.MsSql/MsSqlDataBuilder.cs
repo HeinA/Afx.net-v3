@@ -27,6 +27,8 @@ namespace Afx.Data.MsSql
 
     List<Type> mCreatedTables = new List<Type>();
 
+    #region ValidateDataStructure()
+
     public void ValidateDataStructure()
     {
       Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Afx.Data.Properties.Resources.NoConnectionScope);
@@ -57,6 +59,9 @@ namespace Afx.Data.MsSql
         throw;
       }
     }
+
+    #endregion
+
 
     #region PersistentTypes
 
@@ -776,6 +781,8 @@ namespace Afx.Data.MsSql
 
     #endregion
 
+    #region ExecuteDataSet()
+
     public static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       System.Data.DataSet ds = new System.Data.DataSet();
@@ -789,5 +796,7 @@ namespace Afx.Data.MsSql
 
       return ds;
     }
+
+    #endregion
   }
 }

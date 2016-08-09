@@ -11,6 +11,8 @@ namespace Afx.Data
   {
     Dictionary<Guid, List<ObjectDataRow>> mRowByOwner = new Dictionary<Guid, List<ObjectDataRow>>();
 
+    #region Constructors
+
     public ObjectDataRowCollection(ObjectDataRow[] rows)
     {
       foreach (var row in rows)
@@ -30,10 +32,9 @@ namespace Afx.Data
       }
     }
 
-    public IEnumerator<ObjectDataRow> GetEnumerator()
-    {
-      return ((IEnumerable<ObjectDataRow>)GetOwnedObjects(null)).GetEnumerator(); 
-    }
+    #endregion
+
+    #region GetOwnedObjects()
 
     public ObjectDataRow[] GetOwnedObjects(Guid? owner)
     {
@@ -42,9 +43,21 @@ namespace Afx.Data
       return mRowByOwner[o].ToArray();
     }
 
+    #endregion
+
+
+    #region IEnumerable
+
+    public IEnumerator<ObjectDataRow> GetEnumerator()
+    {
+      return ((IEnumerable<ObjectDataRow>)GetOwnedObjects(null)).GetEnumerator();
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
       return GetOwnedObjects(null).GetEnumerator();
     }
+
+    #endregion
   }
 }

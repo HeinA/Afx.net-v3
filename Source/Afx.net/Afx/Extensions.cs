@@ -11,7 +11,7 @@ namespace Afx
 {
   public static class Extensions
   {
-    #region Strings
+    #region String
 
     public static string FormatWith(this string format, params object[] args)
     {
@@ -27,7 +27,7 @@ namespace Afx
 
     #endregion
 
-    #region Types
+    #region Type
 
     #region GetGenericSubClass()
 

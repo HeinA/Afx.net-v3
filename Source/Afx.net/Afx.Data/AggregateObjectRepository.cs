@@ -15,12 +15,17 @@ namespace Afx.Data
   public abstract class AggregateObjectRepository<T> : AggregateObjectRepository
     where T : class, IAfxObject
   {
-    public abstract AggregateObjectQuery<T> Query(string conditions);
+
+    #region Type TargetType
 
     public override Type TargetType
     {
       get { return typeof(T); }
     }
+
+    #endregion
+
+    #region Load()
 
     public T Load(Guid id)
     {
@@ -33,20 +38,30 @@ namespace Afx.Data
       }
     }
 
+    #endregion
+
+    #region Save()
+
     public void Save(T target)
     {
       DataScope.CurrentScope.RepositoryFactory.GetObjectDataConverter(target).WriteDatabase(target);
     }
+
+    #endregion
+
+    #region Delete()
 
     public void Delete(T target)
     {
       DataScope.CurrentScope.RepositoryFactory.GetObjectDataConverter(target).DeleteDatabase(target);
     }
 
-    protected abstract IEnumerable<T> GetObjects(ObjectDataRowCollection rows);
-    protected abstract string AggregateSelectsForQuery { get; }
-    protected abstract string AggregateSelectsForObject { get; }
-    protected abstract void AddParameter(IDbCommand cmd, string name, object value);
+    #endregion
+
+    public abstract AggregateObjectQuery<T> Query(string conditions);
+
+
+    #region LoadObjects
 
     protected internal T[] LoadObjects(AggregateObjectQuery<T> query)
     {
@@ -60,6 +75,10 @@ namespace Afx.Data
       }
     }
 
+    #endregion
+
+    #region GetObjectDataConverter()
+
     protected ObjectDataConverter<T1> GetObjectDataConverter<T1>()
       where T1 : class, IAfxObject
     {
@@ -70,5 +89,12 @@ namespace Afx.Data
     {
       return DataScope.CurrentScope.RepositoryFactory.GetObjectDataConverter(objectType);
     }
+
+    #endregion
+
+    protected abstract IEnumerable<T> GetObjects(ObjectDataRowCollection rows);
+    protected abstract string AggregateSelectsForQuery { get; }
+    protected abstract string AggregateSelectsForObject { get; }
+    protected abstract void AddParameter(IDbCommand cmd, string name, object value);
   }
 }

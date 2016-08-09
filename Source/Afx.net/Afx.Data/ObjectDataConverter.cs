@@ -12,6 +12,9 @@ namespace Afx.Data
     public abstract void WriteObject(ObjectDataRow source, ObjectDataRowCollection data);
     public abstract DatabaseWriteType WriteDatabase(IAfxObject source);
     public abstract void DeleteDatabase(IAfxObject source);
+
+    #region GetObjectDataConverter()
+
     protected ObjectDataConverter<T> GetObjectDataConverter<T>()
       where T : class, IAfxObject
     {
@@ -27,11 +30,24 @@ namespace Afx.Data
     {
       return DataScope.CurrentScope.RepositoryFactory.GetObjectDataConverter(obj);
     }
+
+    #endregion
   }
 
   public abstract class ObjectDataConverter<T> : ObjectDataConverter
     where T : class, IAfxObject
   {
+    #region Type TargetType
+
+    public override Type TargetType
+    {
+      get { return typeof(T); }
+    }
+
+    #endregion
+
+    #region WriteObject()
+
     public override sealed void WriteObject(ObjectDataRow source, ObjectDataRowCollection data)
     {
       if (source.Instance == null)
@@ -42,15 +58,16 @@ namespace Afx.Data
       WriteObject((T)source.Instance, source, data);
     }
 
+    #endregion
+
+    #region WriteDatabase()
+
     public override sealed DatabaseWriteType WriteDatabase(IAfxObject source)
     {
       return WriteDatabase((T)source);
     }
 
-    public override Type TargetType
-    {
-      get { return typeof(T); }
-    }
+    #endregion
 
     protected abstract void WriteObject(T target, ObjectDataRow source, ObjectDataRowCollection context);
     protected abstract DatabaseWriteType WriteDatabase(T source);

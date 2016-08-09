@@ -8,8 +8,8 @@ namespace Afx.Data
 {
   public enum SelectionType
   {
-    All
-    , Id
-    , Query
+    All,
+    Id,
+    Query
   }
 }

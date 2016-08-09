@@ -26,8 +26,6 @@ namespace Afx.Data
 
     #endregion
 
-    protected AggregateObjectRepository<T> Repository { get; private set; }
-
     public string Conditions { get; set; }
 
     #region QueryParameter[] Parameters
@@ -52,13 +50,17 @@ namespace Afx.Data
 
     #endregion
 
-    protected internal abstract void AppendParameters(IDbCommand cmd);
+    #region Submit()
 
     public ObjectCollection<T> Submit()
     {
       return new ObjectCollection<T>(Repository.LoadObjects(this));
     }
 
+    #endregion
+
+    protected AggregateObjectRepository<T> Repository { get; private set; }
+    protected internal abstract void AppendParameters(IDbCommand cmd);
     protected internal abstract string GetQuery();
 
     #region class QueryParameter

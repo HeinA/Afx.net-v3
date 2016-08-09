@@ -51,11 +51,11 @@ namespace TestConsoleApplication
       //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
       //using (new ConnectionScope())
       //{
-      //  DataScope.CurrentScope.DoDataStructureValidation();
+      //  DataScope.CurrentScope.ValidateDataStructure();
       //  ts.Complete();
       //}
 
-      //DataScope.CurrentScope.RepositoryFactory.Build(true, false);
+      //DataScope.CurrentScope.BuildRepositoriesRelease();
       //Console.WriteLine("RepositoryFactory.Build {0}", sw.ElapsedMilliseconds);
       //sw.Restart();
 

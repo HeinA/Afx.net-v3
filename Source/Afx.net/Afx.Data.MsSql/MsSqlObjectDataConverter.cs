@@ -10,6 +10,8 @@ namespace Afx.Data.MsSql
   public abstract class MsSqlObjectDataConverter<T> : ObjectDataConverter<T>
     where T : class, IAfxObject
   {
+    #region GetCommand()
+
     protected SqlCommand GetCommand()
     {
       return GetCommand(string.Empty);
@@ -20,15 +22,9 @@ namespace Afx.Data.MsSql
       return (SqlCommand)ConnectionScope.CurrentScope.GetCommand(text);
     }
 
-    protected DatabaseWriteType GetWriteType(IAfxObject source)
-    {
-      if (!source.IsDirty) return DatabaseWriteType.None;
-      using (var cmd = GetCommand(string.Format("SELECT COUNT(1) FROM {0} WHERE [id]=@id", source.GetType().AfxDbName())))
-      {
-        cmd.Parameters.AddWithValue("@id", source.Id);
-        return cmd.ExecuteScalar().Equals(0) ? DatabaseWriteType.Insert : DatabaseWriteType.Update;
-      }
-    }
+    #endregion
+
+    #region DeleteDatabase()
 
     public override void DeleteDatabase(IAfxObject source)
     {
@@ -40,6 +36,25 @@ namespace Afx.Data.MsSql
       }
     }
 
+    #endregion
+
+
+    #region GetWriteType()
+
+    protected DatabaseWriteType GetWriteType(IAfxObject source)
+    {
+      if (!source.IsDirty) return DatabaseWriteType.None;
+      using (var cmd = GetCommand(string.Format("SELECT COUNT(1) FROM {0} WHERE [id]=@id", source.GetType().AfxDbName())))
+      {
+        cmd.Parameters.AddWithValue("@id", source.Id);
+        return cmd.ExecuteScalar().Equals(0) ? DatabaseWriteType.Insert : DatabaseWriteType.Update;
+      }
+    }
+
+    #endregion
+
+    #region GetInstance()
+
     protected IAfxObject GetInstance(object id, ObjectDataRowCollection context)
     {
       if (id == null || id == DBNull.Value) return null;
@@ -49,7 +64,9 @@ namespace Afx.Data.MsSql
         if (odr.Instance == null) GetObjectDataConverter(odr.Type).WriteObject(odr, context);
         return odr.Instance;
       }
-      return DataScope.CurrentScope.DataCache.GetObject((Guid)id);
+      return DataScope.GetObject((Guid)id);
     }
+
+    #endregion
   }
 }

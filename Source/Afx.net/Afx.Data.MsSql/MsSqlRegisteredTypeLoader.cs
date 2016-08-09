@@ -12,6 +12,8 @@ namespace Afx.Data.MsSql
   [Export("System.Data.SqlClient.SqlConnection, System.Data", typeof(IRegisteredTypeLoader))]
   public class MsSqlRegisteredTypeLoader : IRegisteredTypeLoader
   {
+    #region LoadTypes
+
     public RegisteredType[] LoadTypes()
     {
       List<RegisteredType> list = new List<RegisteredType>();
@@ -26,6 +28,10 @@ namespace Afx.Data.MsSql
       return list.ToArray();
     }
 
+    #endregion
+
+    #region ExecuteDataSet
+
     public static DataSet ExecuteDataSet(IDbCommand cmd)
     {
       System.Data.DataSet ds = new System.Data.DataSet();
@@ -39,5 +45,7 @@ namespace Afx.Data.MsSql
 
       return ds;
     }
+
+    #endregion
   }
 }

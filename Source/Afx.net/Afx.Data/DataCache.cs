@@ -9,8 +9,12 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  public class DataCache
+  internal class DataCache
   {
+    object mLock = new object();
+    
+    #region Constructors
+
     public DataCache()
     {
       foreach (var type in DataScope.CurrentScope.RepositoryFactory.AggregateCollectionRepositoryTypes)
@@ -19,9 +23,50 @@ namespace Afx.Data
       }
     }
 
-    object mLock = new object();
+    #endregion
 
-    public void Refresh(Type rootType)
+    #region GetObject()
+
+    Dictionary<Guid, CachedObject> mObjectByIdDictionary = new Dictionary<Guid, CachedObject>();
+    public T GetObject<T>(Guid id)
+      where T : class, IAfxObject
+    {
+      lock (mLock)
+      {
+        if (!mObjectByIdDictionary.ContainsKey(id)) return null;
+        return (T)mObjectByIdDictionary[id].TargetObject;
+      }
+    }
+
+    public IAfxObject GetObject(Guid id)
+    {
+      lock (mLock)
+      {
+        if (!mObjectByIdDictionary.ContainsKey(id)) return null;
+        return mObjectByIdDictionary[id].TargetObject;
+      }
+    }
+
+    #endregion
+
+    #region GetObjects()
+
+    public IEnumerable<T> GetObjects<T>()
+      where T : class, IAfxObject
+    {
+      lock (mLock)
+      {
+        return GetList(typeof(T)).Select(i => i.TargetObject).Cast<T>();
+      }
+    }
+
+    #endregion
+
+
+
+    #region Refresh
+
+    void Refresh(Type rootType)
     {
       lock (mLock)
       {
@@ -31,6 +76,10 @@ namespace Afx.Data
         miTyped.Invoke(this, null);
       }
     }
+
+    #endregion
+
+    #region Clear()
 
     void Clear(Type rootType)
     {
@@ -47,6 +96,10 @@ namespace Afx.Data
         }
       }
     }
+
+    #endregion
+
+    #region ProcessCollectionRepository()
 
     void ProcessCollectionRepository<T>()
       where T : class, IAfxObject
@@ -70,11 +123,19 @@ namespace Afx.Data
       }
     }
 
+    #endregion
+
+    #region CollectionSaved()
+
     private void CollectionSaved(object sender, EventArgs e)
     {
       AggregateCollectionRepository acr = (AggregateCollectionRepository)sender;
       Refresh(acr.TargetType);
     }
+
+    #endregion
+
+    #region ProcessObject()
 
     void ProcessObject(Type rootType, IAfxObject target, Type processType)
     {
@@ -101,6 +162,10 @@ namespace Afx.Data
       }
     }
 
+    #endregion
+
+    #region class CachedObject
+
     class CachedObject
     {
       public CachedObject(Type rootType, IAfxObject target)
@@ -113,6 +178,9 @@ namespace Afx.Data
       public IAfxObject TargetObject { get; private set; }
     }
 
+    #endregion
+
+    #region GetList()
 
     Dictionary<Type, List<CachedObject>> mObjectTypedListDictionary = new Dictionary<Type, List<CachedObject>>();
     List<CachedObject> GetList(Type targetType)
@@ -124,33 +192,6 @@ namespace Afx.Data
       return mObjectTypedListDictionary[targetType];
     }
 
-    Dictionary<Guid, CachedObject> mObjectByIdDictionary = new Dictionary<Guid, CachedObject>();
-    public T GetObject<T>(Guid id)
-      where T : class, IAfxObject
-    {
-      lock (mLock)
-      {
-        if (!mObjectByIdDictionary.ContainsKey(id)) return null;
-        return (T)mObjectByIdDictionary[id].TargetObject;
-      }
-    }
-
-    public IAfxObject GetObject(Guid id)
-    {
-      lock (mLock)
-      {
-        if (!mObjectByIdDictionary.ContainsKey(id)) return null;
-        return mObjectByIdDictionary[id].TargetObject;
-      }
-    }
-
-    public IEnumerable<T> GetObjects<T>()
-      where T : class, IAfxObject
-    {
-      lock (mLock)
-      {
-        return GetList(typeof(T)).Select(i => i.TargetObject).Cast<T>();
-      }
-    }
+    #endregion
   }
 }

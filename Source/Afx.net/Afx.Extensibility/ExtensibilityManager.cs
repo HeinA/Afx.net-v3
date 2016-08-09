@@ -14,6 +14,10 @@ namespace Afx
 {
   public static class ExtensibilityManager
   {
+    static CompositionContainer CompositionContainer { get; set; }
+
+    #region Constructors
+
     static ExtensibilityManager()
     {
       PreLoadDeployedAssemblies();
@@ -35,6 +39,10 @@ namespace Afx
       CompositionContainer = new CompositionContainer(aggregateCatalog);
     }
 
+    #endregion
+
+    #region IEnumerable<TypeInfo> BusinessObjectTypes
+
     static List<TypeInfo> mBusinessObjectTypes = new List<TypeInfo>();
     public static IEnumerable<TypeInfo> BusinessObjectTypes
     {
@@ -47,24 +55,19 @@ namespace Afx
       }
     }
 
-    static List<Assembly> mAfxAssemblies = new List<Assembly>();
-    public static Type[] GetImplementationsOfGenericType(Type generic)
+    #endregion
+
+    #region GetObject()
+
+    public static T GetObject<T>()
     {
-      List<Type> types = new List<Type>();
-      foreach (var assembly in mAfxAssemblies)
-      {
-        foreach (var t in assembly.DefinedTypes)
-        {
-          if (t.GetGenericSubClass(generic.UnderlyingSystemType) != null)
-          {
-            types.Add(t.UnderlyingSystemType);
-          }
-        }
-      }
-      return types.ToArray();
+      return CompositionContainer.GetExportedValueOrDefault<T>();
     }
 
-    static CompositionContainer CompositionContainer { get; set; }
+    public static T GetObject<T>(string contractName)
+    {
+      return CompositionContainer.GetExportedValueOrDefault<T>(contractName);
+    }
 
     public static object GetObject(Type type)
     {
@@ -73,10 +76,9 @@ namespace Afx
       return generic.Invoke(CompositionContainer, null);
     }
 
-    public static T GetObject<T>()
-    {
-      return CompositionContainer.GetExportedValueOrDefault<T>();
-    }
+    #endregion
+
+    #region GetObjects()
 
     public static IEnumerable<T> GetObjects<T>()
     {
@@ -88,10 +90,8 @@ namespace Afx
       return CompositionContainer.GetExportedValues<T>(contractName);
     }
 
-    public static T GetObject<T>(string contractName)
-    {
-      return CompositionContainer.GetExportedValueOrDefault<T>(contractName);
-    }
+    #endregion
+
 
     #region void PreLoadDeployedAssemblies()
 
@@ -105,21 +105,6 @@ namespace Afx
         PreLoadAssembliesFromPath(path);
       }
       mAssembliesLoaded = true;
-    }
-
-    static IEnumerable<string> GetBinFolders()
-    {
-      List<string> toReturn = new List<string>();
-      if (HttpContext.Current != null)
-      {
-        toReturn.Add(HttpRuntime.BinDirectory);
-      }
-      else
-      {
-        toReturn.Add(AppDomain.CurrentDomain.BaseDirectory);
-      }
-
-      return toReturn;
     }
 
     public static void PreLoadAssembliesFromPath(string p)
@@ -138,6 +123,21 @@ namespace Afx
           Assembly.Load(a);
         }
       }
+    }
+
+    static IEnumerable<string> GetBinFolders()
+    {
+      List<string> toReturn = new List<string>();
+      if (HttpContext.Current != null)
+      {
+        toReturn.Add(HttpRuntime.BinDirectory);
+      }
+      else
+      {
+        toReturn.Add(AppDomain.CurrentDomain.BaseDirectory);
+      }
+
+      return toReturn;
     }
 
     #endregion

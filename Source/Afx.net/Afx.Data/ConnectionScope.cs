@@ -9,13 +9,15 @@ namespace Afx.Data
 {
   public class ConnectionScope : IDisposable
   {
+    #region Constructors
+
     public ConnectionScope()
-      : this(DataScope.CurrentScopeName, false)
+      : this(DataScope.CurrentScope?.ScopeName, false)
     {
     }
 
     public ConnectionScope(bool forceNew)
-      : this(DataScope.CurrentScopeName, forceNew)
+      : this(DataScope.CurrentScope?.ScopeName, forceNew)
     {
     }
 
@@ -38,9 +40,13 @@ namespace Afx.Data
       ConnectionStack.Push(this);
     }
 
+    #endregion
+
     public string ConnectionName { get; private set; }
     public IDbConnection Connection { get; private set; }
     bool Forced { get; set; }
+
+    #region GetCommand()
 
     public IDbCommand GetCommand()
     {
@@ -57,6 +63,19 @@ namespace Afx.Data
       return cmd;
     }
 
+    #endregion
+
+    #region ConnectionScope CurrentScope
+
+    public static ConnectionScope CurrentScope
+    {
+      get { return ConnectionStack.Count > 0 ? ConnectionStack.Peek() : null; }
+    }
+
+    #endregion
+
+    #region Dispose()
+
     public void Dispose()
     {
       ConnectionScope cs = ConnectionStack.Pop();
@@ -66,10 +85,11 @@ namespace Afx.Data
       }
     }
 
-    public static ConnectionScope CurrentScope
-    {
-      get { return ConnectionStack.Count > 0 ? ConnectionStack.Peek() : null; }
-    }
+    #endregion
+
+
+
+    #region Stack<ConnectionScope> ConnectionStack
 
     [ThreadStatic]
     static Stack<ConnectionScope> mConnectionStack;
@@ -77,5 +97,7 @@ namespace Afx.Data
     {
       get { return mConnectionStack ?? (mConnectionStack = new Stack<ConnectionScope>()); }
     }
+
+    #endregion
   }
 }

@@ -12,12 +12,16 @@ namespace Afx.Data.MsSql
 {
   public static class MsSqlExtensions
   {
+    #region SqlCommand
+
     public static ObjectDataRow[] AfxGetObjectData(this SqlCommand cmd)
     {
       return ((IDbCommand)cmd).AfxGetObjectData();
     }
 
-    #region Types
+    #endregion
+
+    #region Type
 
     #region AfxDbName()
 
@@ -103,7 +107,7 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region AfxInsertData()
+    #region AfxUpdateData()
 
     public static IEnumerable<Tuple<string, string, string>> AfxUpdateData(this Type type)
     {
@@ -197,6 +201,8 @@ namespace Afx.Data.MsSql
 
     #endregion
 
+    #region AfxSqlAggregateSelects()
+
     public static IEnumerable<string> AfxSqlAggregateSelects(this Type type, SelectionType selectionType)
     {
       foreach (var persistentType in Afx.ExtensibilityManager.BusinessObjectTypes.PersistentTypesInDependecyOrder())
@@ -257,6 +263,14 @@ namespace Afx.Data.MsSql
       }
     }
 
+    #endregion
+
+    #endregion
+
+    #region PropertyInfo
+
+    #region AfxDbName()
+
     public static string AfxDbName(this PropertyInfo pi)
     {
       return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(pi.DeclaringType), pi.DeclaringType.Name, pi.Name);
@@ -269,7 +283,9 @@ namespace Afx.Data.MsSql
 
     #endregion
 
-    #region Strings
+    #endregion
+
+    #region String
 
     #region ColumnName()
 

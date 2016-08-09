@@ -255,7 +255,7 @@ namespace Afx.Data.MsSql
     {
       get
       {
-        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(DataScope.CurrentScopeName);
+        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(DataScope.CurrentScope?.ScopeName);
         return connectionProvider.GetConnection().GetType().FullName;
       }
     }

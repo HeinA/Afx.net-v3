@@ -11,10 +11,14 @@ namespace Afx.Data.MsSql
   public abstract class MsSqlAggregateObjectRepository<T> : AggregateObjectRepository<T>
     where T : class, IAfxObject
   {
+    #region AddParameter()
+
     protected override void AddParameter(IDbCommand cmd, string name, object value)
     {
       SqlCommand sqlcmd = (SqlCommand)cmd;
       sqlcmd.Parameters.AddWithValue(name, value);
     }
+
+    #endregion
   }
 }
