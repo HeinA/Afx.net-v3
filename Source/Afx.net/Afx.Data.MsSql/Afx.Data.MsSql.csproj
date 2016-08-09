@@ -74,8 +74,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="PropertyInfoExtender.cs" />
-    <Compile Include="PropertyPath.cs" />
     <Compile Include="MsSqlExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

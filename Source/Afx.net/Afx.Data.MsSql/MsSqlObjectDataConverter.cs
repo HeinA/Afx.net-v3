@@ -39,5 +39,17 @@ namespace Afx.Data.MsSql
         cmd.ExecuteNonQuery();
       }
     }
+
+    protected IAfxObject GetInstance(object id, ObjectDataRowCollection context)
+    {
+      if (id == null || id == DBNull.Value) return null;
+      var odr = context.FirstOrDefault(r => r.Id.Equals(id));
+      if (odr != null)
+      {
+        if (odr.Instance == null) GetObjectDataConverter(odr.Type).WriteObject(odr, context);
+        return odr.Instance;
+      }
+      return DataScope.CurrentScope.DataCache.GetObject((Guid)id);
+    }
   }
 }

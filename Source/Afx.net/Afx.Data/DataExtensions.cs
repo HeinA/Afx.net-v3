@@ -94,23 +94,37 @@ namespace Afx.Data
       return target.AfxIsAggregateObject() || target.AfxIsAggregateCollection();
     }
 
-    static List<TypeInfo> mSortedByDataDependencies;
     public static IEnumerable<TypeInfo> PersistentTypesInDependecyOrder(this IEnumerable<TypeInfo> types)
     {
-      if (mSortedByDataDependencies == null)
+      List<TypeInfo> sortedByDataDependencies = new List<TypeInfo>();
+      int retries = 0;
+      Queue<TypeInfo> unsorted = new Queue<TypeInfo>(types.Where(t => t.AfxIsPersistentObject()));
+      while (unsorted.Count > 0 && retries < unsorted.Count)
       {
-        mSortedByDataDependencies = new List<TypeInfo>();
-        int retries = 0;
-        Queue<TypeInfo> unsorted = new Queue<TypeInfo>(types.Where(t => t.AfxIsPersistentObject())); //.GetCustomAttribute<PersistentAttribute>(true) != null
-        while (unsorted.Count > 0 && retries < unsorted.Count)
-        {
-          TypeInfo ti = unsorted.Dequeue();
-          if (!AreAllDataDependenciesMet(ti, mSortedByDataDependencies)) unsorted.Enqueue(ti);
-          else mSortedByDataDependencies.Add(ti);
-        }
+        TypeInfo ti = unsorted.Dequeue();
+        if (!AreAllDataDependenciesMet(ti, sortedByDataDependencies)) unsorted.Enqueue(ti);
+        else sortedByDataDependencies.Add(ti);
       }
 
-      foreach (var t in mSortedByDataDependencies)
+      foreach (var t in sortedByDataDependencies)
+      {
+        yield return t;
+      }
+    }
+
+    public static IEnumerable<Type> PersistentTypesInDependecyOrder(this IEnumerable<Type> types)
+    {
+      List<TypeInfo> sortedByDataDependencies = new List<TypeInfo>();
+      int retries = 0;
+      Queue<Type> unsorted = new Queue<Type>(types.Where(t => t.AfxIsPersistentObject())); 
+      while (unsorted.Count > 0 && retries < unsorted.Count)
+      {
+        Type ti = unsorted.Dequeue();
+        if (!AreAllDataDependenciesMet(ti.GetTypeInfo(), sortedByDataDependencies)) unsorted.Enqueue(ti);
+        else sortedByDataDependencies.Add(ti.GetTypeInfo());
+      }
+
+      foreach (var t in sortedByDataDependencies)
       {
         yield return t;
       }
@@ -127,6 +141,69 @@ namespace Afx.Data
         if (!processed.Contains(ti.BaseType.GetTypeInfo())) return false;
       }
       return true;
+    }
+
+    public static string AfxLinqOrderByForObject(this Type targetType)
+    {
+      string linq = null;
+
+      foreach (var a in targetType.GetCustomAttributes<OrderByAttribute>(true).Reverse())
+      {
+        foreach (var propertyNameWithOrder in a.Properties)
+        {
+          if (propertyNameWithOrder.ToUpperInvariant().EndsWith(" DESC"))
+          {
+            var propertyName = propertyNameWithOrder.Substring(0, propertyNameWithOrder.Length - 5);
+
+            if (linq == null) linq = string.Format(".OrderByDescending(i => i.{0})", propertyName);
+            else linq += string.Format(".ThenByDescending(i => i.{0})", propertyName);
+          }
+          else
+          {
+            var propertyName = propertyNameWithOrder;
+            if (propertyNameWithOrder.ToUpperInvariant().EndsWith(" ASC"))
+            {
+              propertyName = propertyNameWithOrder.Substring(0, propertyNameWithOrder.Length - 4);
+            }
+
+            if (linq == null) linq = string.Format(".OrderBy(i => i.{0})", propertyName);
+            else linq += string.Format(".ThenBy(i => i.{0})", propertyName);
+          }
+        }
+      }
+
+      return linq;
+    }
+    public static string AfxLinqOrderByForObjectDataRow(this Type targetType)
+    {
+      string linq = null;
+
+      foreach (var a in targetType.GetCustomAttributes<OrderByAttribute>(true).Reverse())
+      {
+        foreach (var propertyNameWithOrder in a.Properties)
+        {
+          if (propertyNameWithOrder.ToUpperInvariant().EndsWith(" DESC"))
+          {
+            var propertyName = propertyNameWithOrder.Substring(0, propertyNameWithOrder.Length - 5);
+
+            if (linq == null) linq = string.Format(".OrderByDescending(r => r.DataRow[\"{0}\"])", propertyName);
+            else linq += string.Format(".ThenByDescending(r => r.DataRow[\"{0}\"])", propertyName);
+          }
+          else
+          {
+            var propertyName = propertyNameWithOrder;
+            if (propertyNameWithOrder.ToUpperInvariant().EndsWith(" ASC"))
+            {
+              propertyName = propertyNameWithOrder.Substring(0, propertyNameWithOrder.Length - 4);
+            }
+
+            if (linq == null) linq = string.Format(".OrderBy(r => r.DataRow[\"{0}\"])", propertyName);
+            else linq += string.Format(".ThenBy(r => r.DataRow[\"{0}\"])", propertyName);
+          }
+        }
+      }
+
+      return linq;
     }
   }
 }

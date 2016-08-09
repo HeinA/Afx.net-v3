@@ -57,7 +57,6 @@
     <Compile Include="Data\AggregateCollectionAttribute.cs" />
     <Compile Include="Data\AggregateObjectAttribute.cs" />
     <Compile Include="Data\AggregateReferenceAttribute.cs" />
-    <Compile Include="Data\DataCacheAttribute.cs" />
     <Compile Include="Data\DefaultsToNullAttribute.cs" />
     <Compile Include="AfxAssemblyAttribute.cs" />
     <Compile Include="AfxBaseTypeAttribute.cs" />

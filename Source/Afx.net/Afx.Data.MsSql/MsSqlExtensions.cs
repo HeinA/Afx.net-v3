@@ -76,19 +76,26 @@ namespace Afx.Data.MsSql
         yield return new Tuple<string, string, string>("[RegisteredType]", "@rt", "DataScope.CurrentScope.GetRegisteredTypeId(source)");
         if (type.GetGenericSubClass(typeof(AfxObject<>)) != null)
         {
-          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner");
+          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner != null ? source.Owner.Id : (object)System.DBNull.Value");
         }
         if (type.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
         {
-          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner");
-          yield return new Tuple<string, string, string>("[Reference]", "@reference", "source.Reference");
+          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner != null ? source.Owner.Id : (object)System.DBNull.Value");
+          yield return new Tuple<string, string, string>("[Reference]", "@reference", "source.Reference != null ? source.Reference.Id : (object)System.DBNull.Value");
         }
       }
 
       int iCount = 0;
       foreach (var pi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null && pi1.GetGetMethod() != null))
       {
-        yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0}", pi.Name));
+        if (typeof(IAfxObject).IsAssignableFrom(pi.PropertyType))
+        {
+          yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0} != null ? source.{0}.Id : (object)System.DBNull.Value", pi.Name));
+        }
+        else
+        {
+          yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0}", pi.Name));
+        }
       }
 
       yield break;
@@ -104,45 +111,34 @@ namespace Afx.Data.MsSql
       {
         if (type.GetGenericSubClass(typeof(AfxObject<>)) != null)
         {
-          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner");
+          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner != null ? source.Owner.Id : (object)System.DBNull.Value");
         }
         if (type.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
         {
-          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner");
-          yield return new Tuple<string, string, string>("[Reference]", "@reference", "source.Reference");
+          yield return new Tuple<string, string, string>("[Owner]", "@owner", "source.Owner != null ? source.Owner.Id : (object)System.DBNull.Value");
+          yield return new Tuple<string, string, string>("[Reference]", "@reference", "source.Reference != null ? source.Reference.Id : (object)System.DBNull.Value");
         }
       }
 
       int iCount = 0;
       foreach (var pi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null && pi1.GetGetMethod() != null))
       {
-        yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0}", pi.Name));
+        if (typeof(IAfxObject).IsAssignableFrom(pi.PropertyType))
+        {
+          yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0} != null ? source.{0}.Id : (object)System.DBNull.Value", pi.Name));
+        }
+        else
+        {
+          yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0}", pi.Name));
+        }
+
+        //yield return new Tuple<string, string, string>(string.Format("[{0}]", pi.Name), string.Format("@P_{0}", ++iCount), string.Format("source.{0}", pi.Name));
       }
 
       yield break;
     }
 
     #endregion
-
-    //public static IEnumerable<PropertyInfo> AfxQueryProperties(this Type type)
-    //{
-    //  foreach (var pi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(pi1 => pi1.GetCustomAttribute<PersistentAttribute>() != null && pi1.GetSetMethod() != null))
-    //  {
-    //    yield return pi;
-    //  }
-
-    //  yield break;
-    //}
-
-    //public static IEnumerable<PropertyInfo> AfxCollectionProperties(this Type type)
-    //{
-    //  foreach (var pi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(pi1 => pi1.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)) != null && pi1.GetGetMethod() != null))
-    //  {
-    //    yield return pi;
-    //  }
-
-    //  yield break;
-    //}
 
     #region AfxBaseJoins()
 
@@ -259,6 +255,16 @@ namespace Afx.Data.MsSql
           else yield return string.Format("SELECT {0} FROM {1} WHERE {2} IN (SELECT id FROM #{{0}})", columns, joins, aggregateId);
         }
       }
+    }
+
+    public static string AfxDbName(this PropertyInfo pi)
+    {
+      return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(pi.DeclaringType), pi.DeclaringType.Name, pi.Name);
+    }
+
+    public static string AfxDbName(this PropertyInfo pi, Type definingType)
+    {
+      return string.Format("[{0}].[{1}].[{2}]", MsSqlDataBuilder.GetSchema(definingType == null ? pi.DeclaringType : definingType), definingType == null ? pi.DeclaringType.Name : definingType.Name, pi.Name);
     }
 
     #endregion

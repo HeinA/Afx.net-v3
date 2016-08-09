@@ -23,27 +23,52 @@ namespace Afx.Data
       if (ScopeStack.Count > 0) ScopeStack.Pop();
     }
 
+    public static void SetDefaultScope(string dataScopeName)
+    {
+      DefaultScope = new DataScope(dataScopeName);
+    }
+
+    public static string CurrentScopeName
+    {
+      get { return ScopeStack.Count == 0 ? DefaultScope?.ScopeName : ScopeStack.Peek().ScopeName; }
+    }
+
+    public static DataScope CurrentScope
+    {
+      get { return ScopeStack.Count == 0 ? DefaultScope : ScopeStack.Peek(); }
+    }
+
     public string ScopeName { get; private set; }
+    public static DataScope DefaultScope { get; private set; }
+
+    static object mLock = new object();
+
+    #region Registered Types
+
+    static Dictionary<string, List<RegisteredType>> mRegisteredTypeDictionary = new Dictionary<string, List<RegisteredType>>();
 
     public IEnumerable<RegisteredType> RegisteredTypes
     {
       get
       {
-        if (!mRegisteredTypeDictionary.ContainsKey(ScopeName))
+        lock (mLock)
         {
-          using (var ts = new TransactionScope(TransactionScopeOption.Suppress))
-          using (new ConnectionScope(true))
+          if (!mRegisteredTypeDictionary.ContainsKey(ScopeName))
           {
-            var loader = Afx.ExtensibilityManager.GetObject<IRegisteredTypeLoader>(ConnectionType.AfxTypeName());
-            List<RegisteredType> list = new List<RegisteredType>();
-            foreach (var rt in loader.LoadTypes())
+            using (var ts = new TransactionScope(TransactionScopeOption.Suppress))
+            using (new ConnectionScope(true))
             {
-              list.Add(rt);
+              var loader = Afx.ExtensibilityManager.GetObject<IRegisteredTypeLoader>(ConnectionType.AfxTypeName());
+              List<RegisteredType> list = new List<RegisteredType>();
+              foreach (var rt in loader.LoadTypes())
+              {
+                list.Add(rt);
+              }
+              mRegisteredTypeDictionary.Add(ScopeName, list);
             }
-            mRegisteredTypeDictionary.Add(ScopeName, list);
           }
+          return mRegisteredTypeDictionary[ScopeName].AsEnumerable();
         }
-        return mRegisteredTypeDictionary[ScopeName].AsEnumerable();
       }
     }
 
@@ -57,91 +82,57 @@ namespace Afx.Data
       return GetRegisteredTypeId(target.GetType());
     }
 
-    //internal ObjectDataConverter<T> GetObjectDataConverter<T>()
-    //  where T : class, IAfxObject
-    //{
-    //  return (ObjectDataConverter<T>)GetObjectDataConverter(typeof(T));
-    //}
+    #endregion
 
-    //internal ObjectDataConverter GetObjectDataConverter(IAfxObject obj)
-    //{
-    //  return GetObjectDataConverter(obj.GetType());
-    //}
+    #region Cache
 
-    //internal ObjectDataConverter GetObjectDataConverter(Type objectType)
-    //{
-    //  if (!mObjectWriterDictionary.ContainsKey(ScopeName))
-    //  {
-    //    List<ObjectDataConverter> list = new List<ObjectDataConverter>();
-    //    foreach (var ow in Afx.ExtensibilityManager.GetObjects<ObjectDataConverter>(ConnectionType.AfxTypeName()))
-    //    {
-    //      list.Add(ow);
-    //    }
-    //    mObjectWriterDictionary.Add(ScopeName, list);
-    //  }
-    //  return mObjectWriterDictionary[ScopeName].FirstOrDefault(ow => ow.TargetType.Equals(objectType));
-    //}
-
-    protected Type ConnectionType
+    static Dictionary<string, DataCache> mDataCacheDictionary = new Dictionary<string, DataCache>();
+    public DataCache DataCache
     {
       get
       {
-        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(ScopeName);
-        return connectionProvider.GetConnection().GetType();
+        lock (mLock)
+        {
+          if (!mDataCacheDictionary.ContainsKey(CurrentScopeName))
+          {
+            mDataCacheDictionary.Add(CurrentScopeName, new DataCache());
+          }
+          return mDataCacheDictionary[CurrentScopeName];
+        }
       }
     }
 
-    public static DataScope DefaultScope { get; private set; }
-
-    //public void BuildAndLoadRepositoriesInMemory()
-    //{
-    //  RepositoryBuilder.GetForDataScope().BuildAndLoadRepositoriesInMemory();
-    //}
-    //public void LoadRepositories()
-    //{
-    //  RepositoryBuilder.GetForDataScope().LoadRepositories();
-    //}
-    //public void BuildRepositories(bool debug)
-    //{
-    //  RepositoryBuilder.GetForDataScope().BuildRepositories(debug);
-    //}
-
-    public static void SetDefaultScope(string dataScopeName)
+    public static T GetObject<T>(Guid id)
+      where T : class, IAfxObject
     {
-      DefaultScope = new DataScope(dataScopeName);
+      return CurrentScope.DataCache.GetObject<T>(id);
     }
 
-    [ThreadStatic]
-    static Stack<DataScope> mScopeStack;
-    static Stack<DataScope> ScopeStack
+    public  static IEnumerable<T> GetObjects<T>()
+      where T : class, IAfxObject
     {
-      get { return mScopeStack ?? (mScopeStack = new Stack<DataScope>()); }
+      return CurrentScope.DataCache.GetObjects<T>();
     }
 
-    public static string CurrentScopeName
-    {
-      get { return ScopeStack.Count == 0 ? DefaultScope?.ScopeName : ScopeStack.Peek().ScopeName; }
-    }
 
-    public static DataScope CurrentScope
-    {
-      get { return ScopeStack.Count == 0 ? DefaultScope : ScopeStack.Peek(); }
-    }
+    #endregion
 
-    //static Dictionary<string, DataCache> mDataCacheDictionary = new Dictionary<string, DataCache>();
-
+    #region  Repositories
 
     static Dictionary<string, RepositoryFactory> mRepositoryFactoryDictionary = new Dictionary<string, RepositoryFactory>();
     public RepositoryFactory RepositoryFactory
     {
       get
       {
-        if (!mRepositoryFactoryDictionary.ContainsKey(CurrentScopeName))
+        lock (mLock)
         {
-          RepositoryFactory rf = Afx.ExtensibilityManager.GetObject<RepositoryFactory>(ConnectionType.AfxTypeName());
-          mRepositoryFactoryDictionary.Add(CurrentScopeName, rf);
+          if (!mRepositoryFactoryDictionary.ContainsKey(CurrentScopeName))
+          {
+            RepositoryFactory rf = Afx.ExtensibilityManager.GetObject<RepositoryFactory>(ConnectionType.AfxTypeName());
+            mRepositoryFactoryDictionary.Add(CurrentScopeName, rf);
+          }
+          return mRepositoryFactoryDictionary[CurrentScopeName];
         }
-        return mRepositoryFactoryDictionary[CurrentScopeName];
       }
     }
 
@@ -157,8 +148,29 @@ namespace Afx.Data
       return CurrentScope.RepositoryFactory.GetCollectionRepository<T>();
     }
 
+    #endregion
 
-    static Dictionary<string, List<RegisteredType>> mRegisteredTypeDictionary = new Dictionary<string, List<RegisteredType>>();
-    static Dictionary<string, List<ObjectDataConverter>> mObjectWriterDictionary = new Dictionary<string, List<ObjectDataConverter>>();
+    public void DoDataStructureValidation()
+    {
+      Guard.ThrowOperationExceptionIfNull(ConnectionScope.CurrentScope, Properties.Resources.NoConnectionScope);
+      IDataBuilder builder = Afx.ExtensibilityManager.GetObject<IDataBuilder>(ConnectionType.AfxTypeName());
+      builder.ValidateDataStructure();
+    }
+
+    protected Type ConnectionType
+    {
+      get
+      {
+        var connectionProvider = Afx.ExtensibilityManager.GetObject<IConnectionProvider>(ScopeName);
+        return connectionProvider.GetConnection().GetType();
+      }
+    }
+
+    [ThreadStatic]
+    static Stack<DataScope> mScopeStack;
+    static Stack<DataScope> ScopeStack
+    {
+      get { return mScopeStack ?? (mScopeStack = new Stack<DataScope>()); }
+    }
   }
 }

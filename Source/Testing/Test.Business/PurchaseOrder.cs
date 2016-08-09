@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
+  [OrderBy("CustomerName")]
   public class PurchaseOrder : Document
   {
     #region bool IsComplete

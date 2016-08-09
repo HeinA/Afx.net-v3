@@ -10,14 +10,14 @@ namespace Afx.Data
   {
     public abstract void Build(bool debug, bool inMemory);
 
-    public abstract ObjectDataConverter GetObjectDataConverter(Type target);
+    protected internal abstract ObjectDataConverter GetObjectDataConverter(Type target);
 
-    public ObjectDataConverter GetObjectDataConverter(IAfxObject obj)
+    protected internal ObjectDataConverter GetObjectDataConverter(IAfxObject obj)
     {
       return GetObjectDataConverter(obj.GetType());
     }
 
-    public ObjectDataConverter<T> GetObjectDataConverter<T>()
+    protected internal ObjectDataConverter<T> GetObjectDataConverter<T>()
       where T : class, IAfxObject
     {
       return (ObjectDataConverter<T>)GetObjectDataConverter(typeof(T));
@@ -29,5 +29,7 @@ namespace Afx.Data
 
     public abstract AggregateCollectionRepository<T> GetCollectionRepository<T>()
       where T : class, IAfxObject;
+
+    public abstract IEnumerable<Type> AggregateCollectionRepositoryTypes { get; }
   }
 }

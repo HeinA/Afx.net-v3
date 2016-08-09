@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Afx.Collections;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Afx.Data
 
     protected AggregateObjectQuery(AggregateObjectRepository<T> store)
     {
-      Store = store;
+      Repository = store;
     }
 
     protected AggregateObjectQuery(AggregateObjectRepository<T> store, string conditions)
@@ -25,7 +26,7 @@ namespace Afx.Data
 
     #endregion
 
-    protected AggregateObjectRepository<T> Store { get; private set; }
+    protected AggregateObjectRepository<T> Repository { get; private set; }
 
     public string Conditions { get; set; }
 
@@ -53,9 +54,9 @@ namespace Afx.Data
 
     protected internal abstract void AppendParameters(IDbCommand cmd);
 
-    public T[] Submit()
+    public ObjectCollection<T> Submit()
     {
-      return Store.LoadObjects(this);
+      return new ObjectCollection<T>(Repository.LoadObjects(this));
     }
 
     protected internal abstract string GetQuery();

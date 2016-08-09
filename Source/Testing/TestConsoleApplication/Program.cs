@@ -21,7 +21,7 @@ namespace TestConsoleApplication
     {
       ObjectCollection<LedgerAccount> accounts = new ObjectCollection<LedgerAccount>();
 
-      for (int i = 0; i < 100; i++)
+      for (int i = 0; i < 10; i++)
       {
         LedgerAccount a = new LedgerAccount() { Name = string.Format("Root {0}", i) };
         accounts.Add(a);
@@ -37,36 +37,54 @@ namespace TestConsoleApplication
         }
       }
 
-      LedgerAccountStore las = new LedgerAccountStore();
-      las.Save(accounts.ToArray());
-
-      //ObjectRepository<LedgerAccount>.Get().SaveObjects(accounts);
+      DataScope.GetCollectionRepository<LedgerAccount>().Save(accounts);
     }
 
 
     static void Main(string[] args)
     {
+      Stopwatch sw = new Stopwatch();
+      sw.Start();
+
       DataScope.SetDefaultScope(LocalConnectionProvider.ConnectionName);
-
-      DataScope.CurrentScope.RepositoryFactory.Build(false, true);
-
-      var dr = DataScope.GetObjectRepository<Document>();
-
-      var obs = DataCache<LedgerAccount>.GetObjects<LedgerAccount>();
 
       //using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required))
       //using (new ConnectionScope())
       //{
-      //  DataBuilder.DoDataStructureValidation();~
+      //  DataScope.CurrentScope.DoDataStructureValidation();
       //  ts.Complete();
       //}
+
+      //DataScope.CurrentScope.RepositoryFactory.Build(true, false);
+      //Console.WriteLine("RepositoryFactory.Build {0}", sw.ElapsedMilliseconds);
+      //sw.Restart();
+
+      var dr = DataScope.GetObjectRepository<Document>();
+      Console.WriteLine("GetObjectRepository<Document>()  {0}", sw.ElapsedMilliseconds);
+      sw.Restart();
+
+      dr = DataScope.GetObjectRepository<Document>();
+      Console.WriteLine("GetObjectRepository<Document>()  {0}", sw.ElapsedMilliseconds);
+      sw.Restart();
+
+      //var c = DataScope.CurrentScope.DataCache;
+
+      var li = DataScope.GetObjects<LedgerAccount>().LastOrDefault();
+      Console.WriteLine("GetObjects<LedgerAccount>()  {0}", sw.ElapsedMilliseconds);
+      sw.Restart();
+
+      li = DataScope.GetObjects<LedgerAccount>().FirstOrDefault();
+      Console.WriteLine("GetObjects<LedgerAccount>()  {0}", sw.ElapsedMilliseconds);
+      sw.Restart();
+
+
+      //var obs = DataCache<LedgerAccount>.GetObjects<LedgerAccount>();
+
 
       //List<PurchaseOrder> list = new List<PurchaseOrder>();
       //PurchaseOrderStore pos = new PurchaseOrderStore();
       //LedgerAccountStore las = new LedgerAccountStore();
 
-      Stopwatch sw = new Stopwatch();
-      sw.Start();
       using (TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
       using (var cs = new ConnectionScope())
       {
@@ -76,8 +94,15 @@ namespace TestConsoleApplication
           //Console.WriteLine(sw.ElapsedMilliseconds);
           //sw.Restart();
 
+          //ObjectCollection<LedgerAccount> col = DataScope.GetCollectionRepository<LedgerAccount>().LoadCollection();
+          //col.RemoveAt(0);
+          //DataScope.GetCollectionRepository<LedgerAccount>().Save(col);
+
           PurchaseOrder po = (PurchaseOrder)dr.Load(Guid.Parse("e90a63f6-ed19-4523-a282-ab325f185971"));
-          Console.WriteLine(sw.ElapsedMilliseconds);
+          po.SourceAccount = DataScope.GetObjects<LedgerAccount>().LastOrDefault();
+          dr.Save(po);
+
+          Console.WriteLine("PurchaseOrder Load  {0}", sw.ElapsedMilliseconds);
           sw.Restart();
 
           //po = pos.Load(Guid.Parse("e90a63f6-ed19-4523-a282-ab325f185971"));
@@ -89,11 +114,11 @@ namespace TestConsoleApplication
           //pos.Save(po);
 
 
-          //PurchaseOrder[] orders = pos.Query("CustomerName != null & Items.Reference.Name starts with @p1")            
-          //            .AddParameter("@p1", "wh")
-          //            .Submit();
-          //Console.WriteLine(sw.ElapsedMilliseconds);
-          //sw.Restart();
+          var orders = DataScope.GetObjectRepository<PurchaseOrder>().Query("CustomerName != null & Items.Reference.Name starts with @p1")
+                      .AddParameter("@p1", "wh")
+                      .Submit();
+          Console.WriteLine("Query {0}", sw.ElapsedMilliseconds);
+          sw.Restart();
 
           //LedgerAccount[] acts = las.LoadCollection();
           //Console.WriteLine(sw.ElapsedMilliseconds);

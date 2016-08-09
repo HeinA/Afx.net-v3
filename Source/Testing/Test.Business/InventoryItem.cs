@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  //[Persistent]
   [AggregateReferenceAttribute]
   public class InventoryItem : AfxObject
   {

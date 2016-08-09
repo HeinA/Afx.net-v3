@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Afx.Data
 {
-  [AttributeUsage(AttributeTargets.Class)]
+  [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
   public class OrderByAttribute : Attribute
   {
     public OrderByAttribute(params string[] properties)

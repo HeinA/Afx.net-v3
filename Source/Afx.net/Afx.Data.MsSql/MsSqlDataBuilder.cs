@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 namespace Afx.Data.MsSql
 {
   [Export("System.Data.SqlClient.SqlConnection, System.Data", typeof(IDataBuilder))]
-  public sealed class MsSqlDataBuilder : DataBuilder, IDataBuilder
+  public sealed class MsSqlDataBuilder : IDataBuilder
   {
     static readonly log4net.ILog Log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -774,5 +775,19 @@ namespace Afx.Data.MsSql
     }
 
     #endregion
+
+    public static DataSet ExecuteDataSet(IDbCommand cmd)
+    {
+      System.Data.DataSet ds = new System.Data.DataSet();
+      ds.EnforceConstraints = false;
+      ds.Locale = CultureInfo.InvariantCulture;
+      using (IDataReader r = cmd.ExecuteReader())
+      {
+        ds.Load(r, LoadOption.OverwriteChanges, string.Empty);
+        r.Close();
+      }
+
+      return ds;
+    }
   }
 }

@@ -59,6 +59,7 @@ namespace Afx.Data.MsSql
       CompilerResults results = null;
       cp.GenerateInMemory = inMemory;
       cp.IncludeDebugInformation = debug;
+      
       if (!inMemory)
       {
         DirectoryInfo di = Directory.CreateDirectory(string.Format(@".\{0}", ConnectionTypeName));
@@ -90,34 +91,39 @@ namespace Afx.Data.MsSql
 
     #endregion
 
+    object mLock = new object();
+
     #region GetObjectRespository()
 
     Dictionary<Type, AggregateObjectRepository> mAggregateObjectRepositoryDictionary;
     public AggregateObjectRepository GetObjectRespository(Type target)
     {
-      if (mAggregateObjectRepositoryDictionary == null)
+      lock (mLock)
       {
-        mAggregateObjectRepositoryDictionary = new Dictionary<Type, AggregateObjectRepository>();
-        foreach (var a in Assemblies)
+        if (mAggregateObjectRepositoryDictionary == null)
         {
-          foreach (var t in a.GetTypes())
+          mAggregateObjectRepositoryDictionary = new Dictionary<Type, AggregateObjectRepository>();
+          foreach (var a in Assemblies)
           {
-            if (typeof(AggregateObjectRepository).IsAssignableFrom(t))
+            foreach (var t in a.GetTypes())
             {
-              AggregateObjectRepository aor = (AggregateObjectRepository)Activator.CreateInstance(t);
-              mAggregateObjectRepositoryDictionary.Add(aor.TargetType, aor);
+              if (typeof(AggregateObjectRepository).IsAssignableFrom(t))
+              {
+                AggregateObjectRepository aor = (AggregateObjectRepository)Activator.CreateInstance(t);
+                mAggregateObjectRepositoryDictionary.Add(aor.TargetType, aor);
+              }
             }
           }
         }
-      }
 
-      try
-      {
-        return mAggregateObjectRepositoryDictionary[target];
-      }
-      catch
-      {
-        throw new InvalidOperationException(string.Format(Properties.Resources.AggregateObjectRepositoryNotFound, target));
+        try
+        {
+          return mAggregateObjectRepositoryDictionary[target];
+        }
+        catch
+        {
+          throw new InvalidOperationException(string.Format(Properties.Resources.AggregateObjectRepositoryNotFound, target));
+        }
       }
     }
 
@@ -132,27 +138,38 @@ namespace Afx.Data.MsSql
     #region GetCollectionRespository()
 
     Dictionary<Type, AggregateCollectionRepository> mAggregateCollectionRepositoryDictionary;
-    public AggregateCollectionRepository GetCollectionRespository(Type target)
+    Dictionary<Type, AggregateCollectionRepository> AggregateCollectionRepositoryDictionary
     {
-      if (mAggregateCollectionRepositoryDictionary == null)
+      get
       {
-        mAggregateCollectionRepositoryDictionary = new Dictionary<Type, AggregateCollectionRepository>();
-        foreach (var a in Assemblies)
+        lock (mLock)
         {
-          foreach (var t in a.GetTypes())
+          if (mAggregateCollectionRepositoryDictionary == null)
           {
-            if (typeof(AggregateCollectionRepository).IsAssignableFrom(t))
+            mAggregateCollectionRepositoryDictionary = new Dictionary<Type, AggregateCollectionRepository>();
+            foreach (var a in Assemblies)
             {
-              AggregateCollectionRepository acr = (AggregateCollectionRepository)Activator.CreateInstance(t);
-              mAggregateCollectionRepositoryDictionary.Add(acr.TargetType, acr);
+              foreach (var t in a.GetTypes())
+              {
+                if (typeof(AggregateCollectionRepository).IsAssignableFrom(t))
+                {
+                  AggregateCollectionRepository acr = (AggregateCollectionRepository)Activator.CreateInstance(t);
+                  mAggregateCollectionRepositoryDictionary.Add(acr.TargetType, acr);
+                }
+              }
             }
           }
+          return mAggregateCollectionRepositoryDictionary;
         }
       }
+    }
+
+    public AggregateCollectionRepository GetCollectionRespository(Type target)
+    {
 
       try
       {
-        return mAggregateCollectionRepositoryDictionary[target];
+        return AggregateCollectionRepositoryDictionary[target];
       }
       catch
       {
@@ -165,41 +182,50 @@ namespace Afx.Data.MsSql
       return (AggregateCollectionRepository<T>)GetCollectionRespository(typeof(T));
     }
 
-    #endregion
-
-    #region GetObjectDataConverter
-
-    Dictionary<Type, ObjectDataConverter> mObjectDataConverterDictionary;
-    public override ObjectDataConverter GetObjectDataConverter(Type target)
+    public override IEnumerable<Type> AggregateCollectionRepositoryTypes
     {
-      if (mObjectDataConverterDictionary == null)
-      {
-        mObjectDataConverterDictionary = new Dictionary<Type, ObjectDataConverter>();
-        foreach (var a in Assemblies)
-        {
-          foreach (var t in a.GetTypes())
-          {
-            if (typeof(ObjectDataConverter).IsAssignableFrom(t))
-            {
-              ObjectDataConverter acr = (ObjectDataConverter)Activator.CreateInstance(t);
-              mObjectDataConverterDictionary.Add(acr.TargetType, acr);
-            }
-          }
-        }
-      }
-
-      try
-      {
-        return mObjectDataConverterDictionary[target];
-      }
-      catch
-      {
-        throw new InvalidOperationException(string.Format(Properties.Resources.ObjectDataConverterNotFound, target));
-      }
+      get { return AggregateCollectionRepositoryDictionary.Values.Select(cr => cr.TargetType).PersistentTypesInDependecyOrder().Where(t => !t.IsAbstract); }
     }
 
     #endregion
 
+
+
+    #region GetObjectDataConverter
+
+    Dictionary<Type, ObjectDataConverter> mObjectDataConverterDictionary;
+    protected override ObjectDataConverter GetObjectDataConverter(Type target)
+    {
+      lock (mLock)
+      {
+        if (mObjectDataConverterDictionary == null)
+        {
+          mObjectDataConverterDictionary = new Dictionary<Type, ObjectDataConverter>();
+          foreach (var a in Assemblies)
+          {
+            foreach (var t in a.GetTypes())
+            {
+              if (typeof(ObjectDataConverter).IsAssignableFrom(t))
+              {
+                ObjectDataConverter acr = (ObjectDataConverter)Activator.CreateInstance(t);
+                mObjectDataConverterDictionary.Add(acr.TargetType, acr);
+              }
+            }
+          }
+        }
+
+        try
+        {
+          return mObjectDataConverterDictionary[target];
+        }
+        catch
+        {
+          throw new InvalidOperationException(string.Format(Properties.Resources.ObjectDataConverterNotFound, target));
+        }
+      }
+    }
+
+    #endregion
 
     #region IEnumerable<Assembly> Assemblies
 
@@ -210,6 +236,7 @@ namespace Afx.Data.MsSql
       {
         if (mAssemblies == null)
         {
+          mAssemblies = new Collection<Assembly>();
           DirectoryInfo di = new DirectoryInfo(string.Format(@".\{0}", ConnectionTypeName));
           foreach (var fi in di.GetFiles("*.dll"))
           {
@@ -261,11 +288,13 @@ namespace Afx.Data.MsSql
 
       protected void Write(string value, params object[] args)
       {
+        if (value == null) return;
         IndentedTextWriter.Write(value, args);
       }
 
       protected void WriteLine(string value, params object[] args)
       {
+        if (value == null) WriteLine();
         IndentedTextWriter.WriteLine(value, args);
       }
 
@@ -355,8 +384,8 @@ namespace Afx.Data.MsSql
 
         WriteLine("protected override System.Collections.Generic.IEnumerable<{0}> GetObjects(ObjectDataRowCollection rows)", TargetType.FullName);
         StartScope();
-        WriteLine("foreach (var row in rows.Where(r => typeof({0}).IsAssignableFrom(r.Type))", TargetType.FullName);
-        //Order By
+        Write("foreach (var row in rows.Where(r => typeof({0}).IsAssignableFrom(r.Type))", TargetType.FullName);
+        Write(TargetType.AfxLinqOrderByForObjectDataRow());
         WriteLine(")");
         StartScope();
         WriteLine("if (row.Instance == null) GetObjectDataConverter(row.Type).WriteObject(row, rows);");
@@ -405,7 +434,7 @@ namespace Afx.Data.MsSql
         WriteLine("protected override System.Collections.Generic.IEnumerable<{0}> GetObjects(ObjectDataRowCollection rows)", TargetType.FullName);
         StartScope();
         Write("foreach (var row in rows.Where(r => typeof({0}).IsAssignableFrom(r.Type))", TargetType.FullName);
-        //Order By
+        Write(TargetType.AfxLinqOrderByForObjectDataRow());
         WriteLine(")");
         StartScope();
         WriteLine("if (row.Instance == null) GetObjectDataConverter(row.Type).WriteObject(row, rows);");
@@ -464,23 +493,14 @@ namespace Afx.Data.MsSql
           }
           else
           {
-            WriteLine("// Load from context or cache");
+            WriteLine("target.{0} = ({1})GetInstance(source.DataRow[\"{0}\"], context);", pi.Name, pi.PropertyType.FullName);
           }
         }
 
         if (TargetType.GetGenericSubClass(typeof(AssociativeObject<,>)) != null)
         {
           Type referenceType = TargetType.GetGenericSubClass(typeof(AssociativeObject<,>)).GetGenericArguments()[1];
-          if (referenceType.GetCustomAttribute<AggregateReferenceAttribute>() != null)
-          {
-            WriteLine("var referenceRow = context.FirstOrDefault(r => r.Id.Equals((System.Guid)source.DataRow[\"Reference\"]));");
-            WriteLine("if (referenceRow.Instance == null) GetObjectDataConverter(referenceRow.Type).WriteObject(referenceRow, context);");
-            WriteLine("target.Reference = ({0})referenceRow.Instance;", referenceType.FullName);
-          }
-          else
-          {
-            WriteLine("// Load from cache");
-          }
+          WriteLine("target.Reference = ({0})GetInstance(source.DataRow[\"Reference\"], context);", referenceType.FullName);
         }
 
         #endregion
@@ -491,7 +511,7 @@ namespace Afx.Data.MsSql
         {
           Type itemType = pi.PropertyType.GetGenericSubClass(typeof(ObjectCollection<>)).GetGenericArguments()[0];
           Write("foreach (var item in context.GetOwnedObjects(target.Id).Where(r => typeof({0}).IsAssignableFrom(r.Type))", itemType.FullName);
-          //Order by
+          Write(itemType.AfxLinqOrderByForObjectDataRow());
           WriteLine(")");
           StartScope();
           WriteLine("if (item.Instance == null) GetObjectDataConverter(item.Type).WriteObject(item, context);");
@@ -514,7 +534,7 @@ namespace Afx.Data.MsSql
           EndScope();
           WriteLine("System.Collections.IDictionary dict = target.{0};", pi.Name);
           Write("foreach (var item in list{0}", itemType.Name);
-          //Order by
+          Write(itemType.AfxLinqOrderByForObject());
           WriteLine(") dict.Add(item.Reference, item);");
         }
 

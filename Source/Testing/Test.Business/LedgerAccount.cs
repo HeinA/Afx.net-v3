@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Test.Business
 {
-  //[Persistent]
   [AggregateCollection]
   [OrderBy("Name")]
   public class LedgerAccount : Afx.AfxObject<LedgerAccount>
@@ -27,7 +26,7 @@ namespace Test.Business
     #endregion
 
     public ObjectCollection<LedgerAccount> mAccounts;
-    [DataCache]
+    //[DataCache]
     public ObjectCollection<LedgerAccount> Accounts
     {
       get { return GetObjectCollection<LedgerAccount>(ref mAccounts); }
